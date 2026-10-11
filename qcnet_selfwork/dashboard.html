@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+<style>
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .stat-card { background: var(--tint); border: 1px solid var(--border-glass); border-radius: 14px; padding: 14px; text-align: center; }
+  .stat-num { font-family: var(--font-mono); font-size: 26px; font-weight: 700; color: var(--accent); }
+  .stat-label { font-size: 11px; color: var(--text-lo); margin-top: 3px; }
+</style>
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Site</div>
+    <a class="menu-link" href="rooms.html">🗂️ All rooms</a>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div id="toastArea" class="toast-area"></div>
+  <div class="page" id="page-dashboard" style="overflow-y:auto">
+    <div class="rooms-header">
+      <h2 class="fdisp">📊 Dashboard</h2>
+      <a class="back-link" href="rooms.html">← back</a>
+    </div>
+
+    <div class="settings-card glass">
+      <h4>Site-wide stats</h4>
+      <div id="statsWrap"><div class="spinner-line">Loading…</div></div>
+      <div class="hint-text" id="statsGeneratedAt" style="margin-top:8px"></div>
+    </div>
+
+    <div class="settings-card glass">
+      <h4>Backup</h4>
+      <div class="hint-text">Downloads a .zip of every room's settings and message history (uploaded files are excluded).</div>
+      <button class="settings-btn primary" style="width:100%;margin-top:8px" id="backupBtn">⬇️ Download backup</button>
+    </div>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+const master = getMasterToken();
+if (!master.token) window.location.href = 'login.html';
+
+async function loadStats() {
+  const { res, data } = await apiGet(`${API.dashboard}?masterToken=${encodeURIComponent(master.token)}`);
+  if (handleCommonErrors(res, data)) return;
+  const wrap = document.getElementById('statsWrap');
+  if (!res.ok || !data.ok) { wrap.innerHTML = '<div class="hint-text">Failed to load stats.</div>'; return; }
+  const s = data.stats;
+  wrap.innerHTML = '';
+  wrap.className = 'stat-grid';
+  const items = [
+    ['totalRooms', 'Rooms'], ['totalActiveUsers', 'Active now'],
+    ['totalMessages', 'Total messages'], ['messagesToday', 'Messages today'],
+    ['totalBannedUsers', 'Banned users'], ['blockedIps', 'Blocked IPs'],
+  ];
+  items.forEach(([key, label]) => {
+    const card = document.createElement('div'); card.className = 'stat-card';
+    card.innerHTML = `<div class="stat-num">${s[key] ?? 0}</div><div class="stat-label">${label}</div>`;
+    wrap.appendChild(card);
+  });
+  document.getElementById('statsGeneratedAt').textContent = 'Updated ' + formatDate(s.generatedAt);
+}
+
+document.getElementById('backupBtn').addEventListener('click', () => {
+  window.open(`${API.backup}?masterToken=${encodeURIComponent(master.token)}`, '_blank');
+});
+
+loadStats();
+</script>
+</body>
+</html>

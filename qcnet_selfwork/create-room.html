@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Create Room</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div id="toastArea" class="toast-area"></div>
+  <div class="page" id="page-create">
+    <div class="rooms-header">
+      <h2 class="fdisp">✨ Create a room</h2>
+      <a class="back-link" href="rooms.html">← back</a>
+    </div>
+
+    <div class="field"><label>ROOM NAME</label><input class="settings-input" id="newRoomName" placeholder="e.g. movie-night" /></div>
+    <div class="field" style="margin-top:10px"><label>DISPLAY NAME (OPTIONAL)</label><input class="settings-input" id="newDisplayName" placeholder="How you'll appear in chat" /></div>
+
+    <div class="field" style="margin-top:14px">
+      <label>JOIN AS</label>
+      <div class="segmented">
+        <button class="opt-super active" data-as="super" onclick="pickJoinAs(this)">👑 Super</button>
+        <button class="opt-host" data-as="host" onclick="pickJoinAs(this)">🕵️ Host (anon)</button>
+      </div>
+    </div>
+
+    <div class="field" id="tenantPasswordField" style="display:none">
+      <label for="newRoomPassword">Room Password</label>
+      <input type="password" id="newRoomPassword" placeholder="Set a password for this room" />
+      <div class="hint-text" style="margin-top:4px">Your Super login doesn't have blanket access to every room — only the default super admin does. Set this room's password now (to create it), or enter its existing password to join it.</div>
+    </div>
+
+    <div class="field" style="margin-top:14px; border-left:3px solid #ffd700; padding-left:10px;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" id="premiumToggle" style="width:auto;" />
+        ✨ Make this a Premium Room
+      </label>
+      <div class="hint-text" style="margin-top:4px">Gold glow, confetti, VIP badge, rainbow names, and other extras. The default super admin can create unlimited premium rooms.</div>
+    </div>
+
+    <button class="btn-primary" style="margin-top:18px" id="createBtn">Create &amp; Join</button>
+    <div class="hint-text" style="margin-top:10px">Joining as Super bypasses the PIN and shows your glowing badge. Joining as Host (anon) gives full room controls under the plain "Host" name.</div>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+const master = getMasterToken();
+if (!master.token) window.location.href = 'login.html';
+if (!document.getElementById('newDisplayName').value) document.getElementById('newDisplayName').value = master.name || '';
+if (master.tier !== 'master') document.getElementById('tenantPasswordField').style.display = '';
+
+let joinAsHost = false;
+function pickJoinAs(btn) {
+  document.querySelectorAll('.segmented button').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  joinAsHost = btn.dataset.as === 'host';
+}
+
+document.getElementById('createBtn').addEventListener('click', async () => {
+  const room = document.getElementById('newRoomName').value.trim();
+  const displayName = document.getElementById('newDisplayName').value.trim();
+  const roomPassword = document.getElementById('newRoomPassword').value;
+  const isPremium = document.getElementById('premiumToggle').checked;
+  if (!room) { showToast('Enter a room name.', 'error'); return; }
+  if (master.tier !== 'master' && !roomPassword) { showToast('Enter a room password.', 'error'); return; }
+  const btn = document.getElementById('createBtn'); btn.disabled = true;
+  try {
+    // Premium goes through its own endpoint (create_premium_room) so the
+    // tenant one-room-limit and perk flags get set up correctly. Regular
+    // rooms keep using super_join exactly as before.
+    const { res, data } = isPremium
+      ? await apiPost(API.auth, { action: 'create_premium_room', masterToken: master.token, room, title: displayName ? '' : room, roomPassword })
+      : await apiPost(API.auth, { action: 'super_join', masterToken: master.token, room, roomPassword, displayName, asHost: joinAsHost });
+    if (!res.ok || !data.ok) { showToast((data.message || data.error || 'Failed to create/join.'), 'error'); return; }
+    setSession({ token: data.token, role: data.role, user: data.user, room: data.room });
+    window.location.href = 'room.html';
+  } catch (e) { showToast('Could not reach server.', 'error'); }
+  finally { btn.disabled = false; }
+});
+</script>
+</body>
+</html>

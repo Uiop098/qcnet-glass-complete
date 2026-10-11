@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Tenant Super User</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Account</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Signed in as</div>
+    <div class="settings-card glass" style="margin:0;">
+      <div style="font-size:13px; line-height:1.8;">
+        <div><b>Username:</b> <span id="dUsername">—</span></div>
+        <div><b>Email:</b> <span id="dEmail">—</span></div>
+        <div><b>Access level:</b> Tenant Super User</div>
+      </div>
+    </div>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Site</div>
+    <a class="menu-link" href="dash_login.html">🏢 UB Business Dashboard</a>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Password</div>
+    <button class="menu-link" data-menu-close onclick="document.getElementById('changePassCard').scrollIntoView({behavior:'smooth'})">🔑 Change password</button>
+    <button class="menu-link" data-menu-close onclick="document.getElementById('forgotPassCard').scrollIntoView({behavior:'smooth'})">❓ Forgot password?</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+  <div class="menu-section">
+    <button class="menu-link" onclick="logout()">🚪 Log out</button>
+  </div>
+</div>
+
+<div class="phone">
+  <div id="toastArea" class="toast-area"></div>
+  <div class="page" id="page-tenant">
+    <div class="rooms-header">
+      <h2 class="fdisp">👑 Tenant Super User</h2>
+      <a class="back-link" href="login.html">← log out</a>
+    </div>
+
+    <div class="settings-card glass" style="border-left: 3px solid var(--accent);">
+      <p style="margin:0; font-size:12px; color:var(--text-lo); line-height:1.6;">
+        This account doesn't have access to the default super admin's global room list or backup tools — that space is reserved for the single default super user. You can join any room you know the password for below.
+      </p>
+    </div>
+
+    <div class="settings-card glass">
+      <h4>🔑 Join a Room</h4>
+      <input class="settings-input" id="joinRoomName" placeholder="Room name" />
+      <input class="settings-input" id="joinRoomPassword" type="password" placeholder="Room password / PIN" style="margin-top:8px" />
+      <input class="settings-input" id="joinDisplayName" placeholder="Your display name (optional)" style="margin-top:8px" />
+      <div style="display:flex; gap:8px; margin-top:10px;">
+        <button class="settings-btn primary" style="flex:1;" id="joinAsSuperBtn">Join as Super</button>
+        <button class="settings-btn" style="flex:1;" id="joinAsHostBtn">Join as Host (anon)</button>
+      </div>
+      <p style="margin:8px 0 0; font-size:11px; color:var(--text-lo);">Leave the password blank and this will create a new room using it as the room's initial password.</p>
+    </div>
+
+    <div class="settings-card glass" style="border-left: 3px solid #ffd700;">
+      <h4>✨ Premium Room</h4>
+      <p style="margin:0 0 8px; font-size:12px; color:var(--text-lo); line-height:1.6;">
+        You can have <b>one</b> premium room at a time — creating a new one replaces your current premium room. Premium rooms get a gold glow, confetti, VIP badge, and a few other extras.
+      </p>
+      <input class="settings-input" id="premRoomName" placeholder="Room name" />
+      <input class="settings-input" id="premRoomTitle" placeholder="Room title (optional)" style="margin-top:8px" />
+      <input class="settings-input" id="premRoomPassword" type="password" placeholder="Room password" style="margin-top:8px" />
+      <button class="settings-btn primary" style="width:100%; margin-top:10px; background:#ffd700; color:#3a2c00; border-color:#ffd700;" id="createPremiumBtn">Create Premium Room</button>
+      <div id="premMsg" style="margin-top:8px; font-size:12px;"></div>
+    </div>
+
+    <div class="settings-card glass" id="changePassCard">
+      <h4 id="accountToggle" style="cursor:pointer">🔑 Change Password (tap to expand)</h4>
+      <div id="accountPanel" style="display:none;margin-top:8px">
+        <input class="settings-input" id="curPassInput" type="password" placeholder="Current password" />
+        <input class="settings-input" id="newPassInput" type="password" placeholder="New password (min 6 characters)" style="margin-top:8px" />
+        <button class="settings-btn primary" style="width:100%;margin-top:8px" id="changePassBtn">Change password</button>
+      </div>
+    </div>
+
+    <div class="settings-card glass" id="forgotPassCard">
+      <h4 id="forgotToggle" style="cursor:pointer">❓ Forgot Password? (tap to expand)</h4>
+      <div id="forgotPanel" style="display:none;margin-top:8px">
+        <div id="forgotStep1">
+          <input class="settings-input" id="fpEmail" type="email" placeholder="Account email" />
+          <input class="settings-input" id="fpDob" type="date" style="margin-top:8px" />
+          <button class="settings-btn primary" style="width:100%;margin-top:8px" id="fpStep1Btn">Send Reset Code</button>
+        </div>
+        <div id="forgotStep2" style="display:none; margin-top:8px;">
+          <input class="settings-input" id="fpCode" placeholder="6-digit code" maxlength="6" />
+          <button class="settings-btn primary" style="width:100%;margin-top:8px" id="fpStep2Btn">Verify Code</button>
+        </div>
+        <div id="forgotStep3" style="display:none; margin-top:8px;">
+          <select class="settings-input" id="fpAccountSelect"></select>
+          <input class="settings-input" id="fpNewPass" type="password" placeholder="New password (min 6 characters)" style="margin-top:8px" />
+          <button class="settings-btn primary" style="width:100%;margin-top:8px" id="fpStep3Btn">Reset Password</button>
+        </div>
+        <div id="forgotMsg" style="margin-top:8px; font-size:12px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+const master = getMasterToken();
+if (!master.token) window.location.href = 'login.html';
+// Only a tenant-tier session belongs on this page — a master-tier login
+// (the single default super admin) should use the full rooms.html instead.
+if (master.tier === 'master') window.location.href = 'rooms.html';
+
+document.getElementById('dUsername').textContent = master.username || '(unknown)';
+
+async function loadProfile() {
+  const { res, data } = await apiPost(API.auth, { action: 'super_profile', masterToken: master.token });
+  if (res.ok && data.ok) {
+    document.getElementById('dUsername').textContent = data.username || '(unknown)';
+    document.getElementById('dEmail').textContent = data.email || '(not on file)';
+  }
+}
+loadProfile();
+
+function logout() { clearMasterToken(); window.location.href = 'login.html'; }
+
+// ---- Join a room ----
+async function doJoin(asHost) {
+  const room = document.getElementById('joinRoomName').value.trim();
+  const roomPassword = document.getElementById('joinRoomPassword').value;
+  const displayName = document.getElementById('joinDisplayName').value.trim() || master.name;
+  if (!room) { showToast('Enter a room name.', 'error'); return; }
+  const { res, data } = await apiPost(API.auth, { action: 'super_join', masterToken: master.token, room, roomPassword, displayName, asHost });
+  if (!res.ok || !data.ok) { showToast((data.message || data.error || 'Failed to join.'), 'error'); return; }
+  setSession({ token: data.token, role: data.role, user: data.user, room: data.room });
+  window.location.href = 'room.html';
+}
+document.getElementById('joinAsSuperBtn').addEventListener('click', () => doJoin(false));
+document.getElementById('joinAsHostBtn').addEventListener('click', () => doJoin(true));
+
+// ---- Create / replace Premium Room (tenant supers: one at a time) ----
+async function createPremiumRoom() {
+  const room = document.getElementById('premRoomName').value.trim();
+  const title = document.getElementById('premRoomTitle').value.trim();
+  const roomPassword = document.getElementById('premRoomPassword').value;
+  const msg = document.getElementById('premMsg');
+  if (!room) { msg.style.color = 'var(--danger)'; msg.innerText = 'Enter a room name.'; return; }
+  if (!roomPassword) { msg.style.color = 'var(--danger)'; msg.innerText = 'A room password is required.'; return; }
+  if (!confirm('Creating a new premium room will delete your current premium room (if you have one). Continue?')) return;
+  const { res, data } = await apiPost(API.auth, { action: 'create_premium_room', masterToken: master.token, room, title, roomPassword });
+  if (!res.ok || !data.ok) { msg.style.color = 'var(--danger)'; msg.innerText = (data.message || data.error || 'Failed to create room.'); return; }
+  setSession({ token: data.token, role: data.role, user: data.user, room: data.room });
+  msg.style.color = 'var(--good)'; msg.innerText = 'Premium room created! Redirecting…';
+  setTimeout(() => { window.location.href = 'room.html'; }, 600);
+}
+document.getElementById('createPremiumBtn').addEventListener('click', createPremiumRoom);
+
+// ---- Change password (already know current password) ----
+document.getElementById('accountToggle').addEventListener('click', () => {
+  const panel = document.getElementById('accountPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('changePassBtn').addEventListener('click', async () => {
+  const currentPassword = document.getElementById('curPassInput').value;
+  const newPassword = document.getElementById('newPassInput').value;
+  if (!currentPassword || !newPassword) { showToast('Fill in both fields.', 'error'); return; }
+  const { res, data } = await apiPost(API.auth, { action: 'change_super_password', masterToken: master.token, superUsername: master.username, currentPassword, newPassword });
+  if (res.ok && data.ok) {
+    document.getElementById('curPassInput').value = ''; document.getElementById('newPassInput').value = '';
+    showToast(data.message || 'Password changed.', 'success');
+  } else showToast((data.message || data.error || 'Failed.'), 'error');
+});
+
+// ---- Forgot password (don't know current password) ----
+document.getElementById('forgotToggle').addEventListener('click', () => {
+  const panel = document.getElementById('forgotPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+let fpEmailCache = '';
+function fpMsg(text, ok) {
+  const el = document.getElementById('forgotMsg'); el.textContent = text; el.style.color = ok ? 'var(--good, #4ade80)' : 'var(--danger)';
+}
+document.getElementById('fpStep1Btn').addEventListener('click', async () => {
+  const email = document.getElementById('fpEmail').value.trim();
+  const dob = document.getElementById('fpDob').value;
+  if (!email || !dob) { fpMsg('Enter your email and date of birth.', false); return; }
+  fpEmailCache = email;
+  try {
+    const r = await fetch('dash_auth.php?action=forgot_password_step1', { method: 'POST', body: new URLSearchParams({ email, dob }) });
+    const data = await r.json();
+    if (data.status === 'success') { fpMsg(data.message, true); document.getElementById('forgotStep1').style.display = 'none'; document.getElementById('forgotStep2').style.display = 'block'; }
+    else fpMsg(data.error || 'Failed.', false);
+  } catch (e) { fpMsg('Connection error.', false); }
+});
+document.getElementById('fpStep2Btn').addEventListener('click', async () => {
+  const code = document.getElementById('fpCode').value.trim();
+  if (!code) { fpMsg('Enter the code.', false); return; }
+  try {
+    const r = await fetch('dash_auth.php?action=forgot_password_step2', { method: 'POST', body: new URLSearchParams({ email: fpEmailCache, code }) });
+    const data = await r.json();
+    if (data.status === 'success') {
+      fpMsg('Code verified. Choose a new password.', true);
+      document.getElementById('forgotStep2').style.display = 'none'; document.getElementById('forgotStep3').style.display = 'block';
+      const sel = document.getElementById('fpAccountSelect'); sel.innerHTML = '';
+      (data.accounts || []).forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; sel.appendChild(o); });
+    } else fpMsg(data.error || 'Incorrect code.', false);
+  } catch (e) { fpMsg('Connection error.', false); }
+});
+document.getElementById('fpStep3Btn').addEventListener('click', async () => {
+  const username = document.getElementById('fpAccountSelect').value;
+  const code = document.getElementById('fpCode').value.trim();
+  const new_password = document.getElementById('fpNewPass').value;
+  if (new_password.length < 6) { fpMsg('New password must be at least 6 characters.', false); return; }
+  try {
+    const r = await fetch('dash_auth.php?action=forgot_password_step3', { method: 'POST', body: new URLSearchParams({ email: fpEmailCache, code, username, new_password }) });
+    const data = await r.json();
+    if (data.status === 'success') { fpMsg('Password updated — log in again with your new password.', true); setTimeout(logout, 1800); }
+    else fpMsg(data.error || 'Failed.', false);
+  } catch (e) { fpMsg('Connection error.', false); }
+});
+</script>
+</body>
+</html>

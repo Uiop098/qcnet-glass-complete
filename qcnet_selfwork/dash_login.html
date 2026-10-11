@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>System Login</title>
+    <link rel="stylesheet" href="dash_style.css">
+    <style>.login-container { max-width: 380px; margin: 8vh auto; padding: 40px; display: flex; flex-direction: column; gap: 15px; width: 90%; } select { background: rgba(0,0,0,0.4); border-color: #8b5cf6; color: #fff; font-weight: bold; }</style>
+</head>
+<body>
+    <div class="blob"></div><div class="blob b2"></div>
+    <div class="login-container glass-panel fade-in">
+        <h2 style="margin-top:0; text-align:center;">Secure Portal Login</h2>
+        <label>Account Role</label>
+        <select id="login-role"><option value="user" selected>Customer / General User</option><option value="admin">Administrator / Custom Tenant</option></select>
+        <label>Username</label><input type="text" id="login-user" placeholder="Enter Username" required>
+        <label>Password</label><input type="password" id="login-pass" placeholder="Enter Password" required>
+        <button onclick="submitLogin()" class="primary-btn" style="font-weight:bold; font-size:15px; margin-top:10px;">Sign In</button>
+        <div id="login-msg" style="margin-top: 5px; font-weight: bold; text-align:center;"></div>
+        <a href="#" onclick="showForgotModal()" style="color: #a89bc2; text-align:center; font-size: 13px; text-decoration:none;">Forgot Password?</a>
+        <hr style="border-color: rgba(255,255,255,0.1); width: 100%;">
+        <a href="dash_setup.html" style="color: #4ade80; text-align:center; font-size: 13px; text-decoration:none; font-weight:bold;">Have an invite token? Complete Setup</a>
+        <a href="pay.html?from=dashboard" style="color: #facc15; text-align:center; font-size: 12px; text-decoration:none;">🛒 Want to buy your own portal?</a>
+        <a href="login.html" style="color: #c4b5fd; text-align:center; font-size: 12px; text-decoration:none;">💬 Open QuickChat</a>
+        <a href="gateway.html" style="color: #a89bc2; text-align:center; font-size: 12px; text-decoration:none; margin-top:5px;">← Back to Gateway</a>
+    </div>
+
+    <!-- FORGOT PASSWORD MODAL -->
+    <div class="modal fade-in" id="forgotModal">
+        <div class="modal-content glass-panel">
+            <h3 style="margin:0; text-align:center;">Password Recovery</h3>
+            <div id="step1" style="display:flex; flex-direction:column; gap:10px;">
+                <p style="font-size:12px; color:#aaa; margin:0;">Enter registered Email and Date of Birth. A 6-digit OTP will be sent to verify your identity.</p>
+                <input type="email" id="f-email" placeholder="Registered Email">
+                <input type="date" id="f-dob">
+                <button class="primary-btn" onclick="sendOTP()">Send 6-Digit Code</button>
+            </div>
+            <div id="step2" style="display:none; flex-direction:column; gap:10px;">
+                <p style="font-size:12px; color:#aaa; margin:0;">Check your email for the 6-digit code. Valid for 3 minutes.</p>
+                <input type="text" id="f-code" placeholder="Enter 6-Digit OTP" maxlength="6">
+                <button class="primary-btn" onclick="verifyOTP()">Verify OTP</button>
+            </div>
+            <div id="step3" style="display:none; flex-direction:column; gap:10px;">
+                <p style="font-size:12px; color:#aaa; margin:0;">Select Account & Set New Password.</p>
+                <select id="f-user-sel"></select>
+                <input type="password" id="f-newpass" placeholder="New Password">
+                <button class="primary-btn" onclick="resetPass()">Reset Password</button>
+            </div>
+            <button onclick="hideForgotModal()" style="background:transparent; color:#ff6b6b; border:1px solid #ff6b6b;">Cancel</button>
+        </div>
+    </div>
+    <script src="dash_script.js"></script>
+</body>
+</html>

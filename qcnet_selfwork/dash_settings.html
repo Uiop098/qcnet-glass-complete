@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Settings</title>
+<link rel="stylesheet" href="dash_style.css">
+<style>
+    .section-card { padding:22px; margin-bottom:18px; }
+    .section-card h3 { margin-top:0; display:flex; align-items:center; gap:8px; }
+    .toggle-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--glass-border); }
+    .toggle-row:last-child { border-bottom:none; }
+    .toggle-row .lbl { font-size:14px; } .toggle-row .desc { font-size:12px; color:#a89bc2; }
+    .switch { position:relative; width:44px; height:24px; flex-shrink:0; }
+    .switch input { opacity:0; width:0; height:0; }
+    .slider { position:absolute; cursor:pointer; inset:0; background:rgba(255,255,255,0.2); border-radius:24px; transition:0.2s; }
+    .slider:before { content:""; position:absolute; height:18px; width:18px; left:3px; bottom:3px; background:white; border-radius:50%; transition:0.2s; }
+    input:checked + .slider { background:var(--good); }
+    input:checked + .slider:before { transform:translateX(20px); }
+    .logo-preview { width:70px; height:70px; border-radius:12px; object-fit:cover; background:rgba(0,0,0,0.2); border:1px solid var(--glass-border); }
+    .role-chip { display:inline-flex; align-items:center; gap:8px; padding:6px 12px; border-radius:999px; font-size:12px; margin:4px 6px 4px 0; background:rgba(139,92,246,0.2); }
+    .role-chip button { background:none; border:none; padding:0; margin:0; min-height:auto; color:#ff6b6b; font-size:13px; cursor:pointer; }
+</style>
+</head>
+<body>
+<div class="blob"></div><div class="blob b2"></div>
+
+<nav class="sidebar glass-panel fade-in">
+    <h2 style="margin-top:5px; color:#4ade80;">⚙️ Settings</h2>
+    <button onclick="window.location.href='dash_admin.html'">← Back to Dashboard</button>
+    <div style="margin-top:auto;"><hr style="border-color:var(--glass-border);"><button onclick="logout()">🚪 Log Out</button></div>
+</nav>
+
+<main class="main-content">
+    <div id="top-bar" class="top-bar glass-panel fade-in"><div class="user-info">Business Settings</div></div>
+    <div id="content" class="fade-in"><p style="padding:20px;">Loading...</p></div>
+</main>
+
+<script src="dash_script.js"></script>
+<script>
+function logout() { fetch('dash_auth.php?action=logout').then(() => window.location.href = 'dash_login.html'); }
+
+async function checkAuthAndLoad() {
+    const res = await fetch('dash_auth.php?action=check_auth');
+    const data = await res.json();
+    if (data.status !== 'success' || data.role !== 'admin') { window.location.href = 'dash_login.html'; return; }
+    loadSettings();
+}
+
+async function loadSettings() {
+    const res = await fetch('dash_settings_api.php?action=get_settings');
+    const data = await res.json();
+    if (data.status !== 'success') { document.getElementById('content').innerHTML = `<div class="glass-panel" style="padding:25px;">${data.error}</div>`; return; }
+    render(data);
+}
+
+function render(data) {
+    const b = data.business, n = data.notifications, plan = data.plan, roles = data.roles;
+    document.getElementById('content').innerHTML = `
+    <div class="section-card glass-panel">
+        <h3>🏢 Business Profile</h3>
+        <div style="display:flex; gap:16px; align-items:center; margin-bottom:14px; flex-wrap:wrap;">
+            <img class="logo-preview" id="logoPreview" src="${b.logo_url || ''}" onerror="this.style.display='none'">
+            <div>
+                <input type="file" id="logoInput" accept="image/jpeg,image/png,image/webp" style="width:auto;">
+                <p style="font-size:11px; color:#a89bc2; margin:6px 0 0;">JPG, PNG or WebP, up to 2MB.</p>
+            </div>
+        </div>
+        <input type="text" id="biz-name" placeholder="Business name" value="${(b.name||'').replace(/"/g,'&quot;')}">
+        <input type="text" id="biz-tagline" placeholder="Tagline (optional)" value="${(b.tagline||'').replace(/"/g,'&quot;')}">
+        <button class="primary-btn" onclick="saveBusinessProfile()">Save Business Profile</button>
+        <div id="biz-msg" style="font-size:12px; margin-top:6px;"></div>
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>💳 Current Plan</h3>
+        <p style="font-size:14px;">${plan.label}</p>
+        ${plan.purchased_at ? `<p style="font-size:12px; color:#a89bc2;">Purchased ${new Date(plan.purchased_at*1000).toLocaleDateString()} — ₹${plan.amount}</p>` : '<p style="font-size:12px; color:#a89bc2;">Main panel — no purchase record.</p>'}
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>🔔 Notification Preferences</h3>
+        <div class="toggle-row"><div><div class="lbl">New user signup</div><div class="desc">Notify when a client redeems an invite token</div></div><label class="switch"><input type="checkbox" id="notif-new_user" ${n.new_user ? 'checked' : ''}><span class="slider"></span></label></div>
+        <div class="toggle-row"><div><div class="lbl">New payment</div><div class="desc">Notify when a payment is recorded</div></div><label class="switch"><input type="checkbox" id="notif-new_payment" ${n.new_payment ? 'checked' : ''}><span class="slider"></span></label></div>
+        <div class="toggle-row"><div><div class="lbl">Security alerts</div><div class="desc">Notify on password/2FA changes</div></div><label class="switch"><input type="checkbox" id="notif-security_alerts" ${n.security_alerts ? 'checked' : ''}><span class="slider"></span></label></div>
+        <button class="primary-btn" style="margin-top:14px;" onclick="saveNotifications()">Save Preferences</button>
+        <div id="notif-msg" style="font-size:12px; margin-top:6px;"></div>
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>🔐 Security</h3>
+        <p style="font-size:13px; color:#ccc;">Password and two-factor authentication are managed from your <a href="dash_profile.html" style="color:var(--accent);">My Profile</a> page.</p>
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>🏷️ Role Labels</h3>
+        <p style="font-size:12px; color:#a89bc2;">Named labels you can assign to contacts for organization. These are labels only — they don't grant or restrict access to anything in the dashboard.</p>
+        <div id="roleChips">${Object.entries(roles).map(([id, r]) => `<span class="role-chip" style="background:${r.color}33;"><span style="width:8px;height:8px;border-radius:50%;background:${r.color};display:inline-block;"></span>${r.name}<button onclick="deleteRole('${id}')">✕</button></span>`).join('') || '<p style="font-size:12px; color:#a89bc2;">No role labels yet.</p>'}</div>
+        <div style="display:flex; gap:8px; margin-top:12px; flex-wrap:wrap;">
+            <input type="text" id="newRoleName" placeholder="Role label name" style="flex:1; min-width:150px;">
+            <input type="color" id="newRoleColor" value="#8b5cf6" style="width:50px; padding:2px;">
+            <button class="primary-btn" onclick="addRole()">+ Add Role</button>
+        </div>
+    </div>
+    `;
+    document.getElementById('logoInput').addEventListener('change', handleLogoChange);
+}
+
+async function saveBusinessProfile() {
+    const name = document.getElementById('biz-name').value.trim();
+    const tagline = document.getElementById('biz-tagline').value.trim();
+    const msg = document.getElementById('biz-msg');
+    const res = await fetch('dash_settings_api.php?action=save_business_profile', { method: 'POST', body: new URLSearchParams({ name, tagline }) });
+    const data = await res.json();
+    if (data.status === 'success') { msg.style.color = '#4ade80'; msg.innerText = 'Saved.'; } else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+}
+
+let logoObjectUrl = null;
+async function handleLogoChange() {
+    const input = document.getElementById('logoInput');
+    const file = input.files?.[0]; if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert('Logo must be 2MB or smaller.'); input.value = ''; return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { alert('Choose a JPG, PNG or WebP image.'); input.value = ''; return; }
+    if (logoObjectUrl) URL.revokeObjectURL(logoObjectUrl);
+    logoObjectUrl = URL.createObjectURL(file);
+    const preview = document.getElementById('logoPreview'); preview.src = logoObjectUrl; preview.style.display = '';
+    const form = new FormData(); form.append('logo', file);
+    const res = await fetch('dash_settings_api.php?action=upload_logo', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.status === 'success') { preview.src = data.logo_url + '&_=' + Date.now(); URL.revokeObjectURL(logoObjectUrl); logoObjectUrl = null; }
+    else alert(data.error || 'Upload failed.');
+}
+
+async function saveNotifications() {
+    const form = new URLSearchParams();
+    ['new_user', 'new_payment', 'security_alerts'].forEach(k => { if (document.getElementById('notif-' + k).checked) form.append(k, '1'); });
+    const msg = document.getElementById('notif-msg');
+    const res = await fetch('dash_settings_api.php?action=save_notifications', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.status === 'success') { msg.style.color = '#4ade80'; msg.innerText = 'Saved.'; } else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+}
+
+async function addRole() {
+    const name = document.getElementById('newRoleName').value.trim();
+    const color = document.getElementById('newRoleColor').value;
+    if (!name) return;
+    const res = await fetch('dash_settings_api.php?action=save_role', { method: 'POST', body: new URLSearchParams({ name, color }) });
+    const data = await res.json();
+    if (data.status === 'success') loadSettings(); else alert(data.error);
+}
+async function deleteRole(id) {
+    if (!confirm('Delete this role label?')) return;
+    await fetch('dash_settings_api.php?action=delete_role', { method: 'POST', body: new URLSearchParams({ role_id: id }) });
+    loadSettings();
+}
+
+checkAuthAndLoad();
+</script>
+</body>
+</html>

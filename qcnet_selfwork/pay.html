@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purchase Custom Admin Panel</title>
+    <link rel="stylesheet" href="dash_style.css">
+    <script src="https://sdk.cashfree.com/js/v3/cashfree.js"></script>
+    <style>
+        .pay-container { max-width: 460px; margin: 50px auto; padding: 30px; display: flex; flex-direction: column; gap: 14px; width: 90%; }
+        .tab-row { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+        .tab-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: bold; min-width: 140px; }
+        .tab-btn.active { background: color-mix(in srgb, var(--dash-accent) 30%, transparent); border-color: var(--dash-accent); color: var(--dash-accent); }
+        .panel-view { display: none; flex-direction: column; gap: 12px; }
+        .panel-view.active { display: flex; }
+        .price-tag { text-align: center; font-size: 30px; font-weight: 800; color: var(--dash-success); background: color-mix(in srgb, var(--dash-success) 10%, transparent); border: 1px solid color-mix(in srgb, var(--dash-success) 30%, transparent); border-radius: 14px; padding: 14px 0; }
+        .trust-row { display:flex; justify-content:center; gap:14px; font-size:11px; color:var(--dash-muted); flex-wrap:wrap; }
+    </style>
+</head>
+<body>
+    <div class="blob"></div><div class="blob b2"></div>
+    <div class="pay-container glass-panel fade-in">
+        <h2 style="margin: 0; text-align: center;">🛡️ Buy Custom Dashboard</h2>
+        <div class="trust-row"><span>🔒 Secured by Cashfree</span><span>⚡ Instant Setup</span><span>🛡️ Data Encrypted</span></div>
+        <div class="tab-row">
+            <button class="tab-btn active" id="tab-buy" onclick="switchTab('buy')">💳 Buy New Panel</button>
+            <button class="tab-btn" id="tab-verify" onclick="switchTab('verify')">🔍 Verify & Resume</button>
+        </div>
+        <div class="panel-view active" id="view-buy">
+            <div class="price-tag">₹1.00 <span style="font-size: 14px; color: var(--dash-text); font-weight: 500;">/ Lifetime Access</span></div>
+            <p style="font-size: 12px; color: var(--dash-muted); text-align: center; margin: 0;">Includes isolated server database, client management, and full protection.</p>
+            <input type="text" id="b-name" placeholder="Full Name" required>
+            <div style="display:flex; gap:8px;">
+                <input type="email" id="b-email" placeholder="Email Address" required style="flex:1;">
+                <button type="button" onclick="sendOtp('b-email', 'payment', 'buy')" id="buy-sendOtpBtn" style="white-space:nowrap;">Send Code</button>
+            </div>
+            <div id="buy-otpRow" style="display:none; gap:8px;">
+                <input type="text" id="buy-otpCode" placeholder="6-digit code" maxlength="6" style="flex:1; letter-spacing:3px;">
+                <button type="button" onclick="verifyOtp('b-email', 'payment', 'buy')" style="white-space:nowrap;">Verify</button>
+            </div>
+            <div id="buy-emailStatus" style="font-size:12px;"></div>
+            <input type="tel" id="b-phone" placeholder="Mobile Number (10 digits)" required>
+            <input type="date" id="b-dob" title="Date of Birth (Required for verification)" required>
+            <button onclick="initiateCashfreePayment()" id="pay-btn" class="primary-btn" disabled>Verify your email to continue</button>
+        </div>
+        <div class="panel-view" id="view-verify">
+            <p style="font-size: 13px; color: #ddd; margin: 0;">Refresh by mistake? Enter the Email and Date of Birth you used to pay to resume your setup.</p>
+            <input type="email" id="v-email" placeholder="Email Address used for payment" required>
+            <input type="date" id="v-dob" title="Date of Birth used during purchase" required>
+            <button onclick="verifyAndResume()" class="primary-btn">Verify Payment & Resume</button>
+        </div>
+        <div class="panel-view" id="view-setup">
+            <div style="background: rgba(74, 222, 128, 0.2); border: 1px solid #4ade80; padding: 10px; border-radius: 6px; font-size: 13px;">
+                ✅ Payment Verified! Create your Admin Login credentials.
+            </div>
+            <input type="hidden" id="reg-order-id">
+            <input type="hidden" id="reg-email">
+            <div id="reg-emailNotice" style="font-size:12px; color:#ccc;"></div>
+            <div id="reg-otp-block">
+                <div style="display:flex; gap:8px;">
+                    <button type="button" onclick="sendOtp('reg-email', 'admin_register', 'reg')" id="reg-sendOtpBtn" style="flex:1;">Send Verification Code</button>
+                </div>
+                <div id="reg-otpRow" style="display:none; gap:8px;">
+                    <input type="text" id="reg-otpCode" placeholder="6-digit code" maxlength="6" style="flex:1; letter-spacing:3px;">
+                    <button type="button" onclick="verifyOtp('reg-email', 'admin_register', 'reg')" style="white-space:nowrap;">Verify</button>
+                </div>
+                <div id="reg-emailStatus" style="font-size:12px;"></div>
+            </div>
+            <input type="text" id="reg-user" placeholder="Choose Admin Username" required>
+            <input type="password" id="reg-pass" placeholder="Choose Admin Password" required>
+            <button onclick="submitAdminAccount()" class="primary-btn" id="finalize-btn" disabled>Verify your email to continue</button>
+        </div>
+        <div id="status-msg" style="text-align: center; font-size: 13px; font-weight: bold;"></div>
+        <a href="dash_login.html" id="back-link" style="color: #a89bc2; text-align: center; font-size: 12px; text-decoration: none;">← Back to UB Dashboard</a>
+    </div>
+    <script src="dash_script.js"></script>
+    <script>
+        const cashfree = Cashfree({ mode: "production" });
+        const otpVerified = { buy: false, reg: false };
+        const cooldownTimers = {};
+
+        // Context-aware back link: Cashfree's return_url (pay.html?order_id=...)
+        // doesn't carry query params through from the original entry point, so
+        // the "from" flag is stashed in sessionStorage before checkout and
+        // restored here after the redirect back.
+        (function initBackLink() {
+            const urlFrom = new URLSearchParams(window.location.search).get('from');
+            if (urlFrom) sessionStorage.setItem('pay_entry_from', urlFrom);
+            const from = urlFrom || sessionStorage.getItem('pay_entry_from') || 'dashboard';
+            const link = document.getElementById('back-link');
+            if (from === 'quickchat') { link.href = 'login.html'; link.innerText = '← Back to QuickChat'; }
+            else { link.href = 'dash_login.html'; link.innerText = '← Back to UB Dashboard'; }
+        })();
+
+        function setOtpStatus(prefix, text, color) {
+            const el = document.getElementById(prefix + '-emailStatus'); if (el) { el.innerText = text; el.style.color = color || '#aaa'; }
+        }
+
+        async function sendOtp(emailFieldId, purpose, prefix) {
+            const email = document.getElementById(emailFieldId).value.trim();
+            if (!email) { setOtpStatus(prefix, 'Enter an email address first.', '#ff6b6b'); return; }
+            otpVerified[prefix] = false;
+            updateContinueButtons();
+            const btn = document.getElementById(prefix + '-sendOtpBtn'); btn.disabled = true;
+            const form = new URLSearchParams(); form.append('email', email); form.append('purpose', purpose);
+            try {
+                const res = await fetch('email_otp.php?action=send_otp', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById(prefix + '-otpRow').style.display = 'flex';
+                    setOtpStatus(prefix, 'Code sent — check your inbox. It expires in 10 minutes.', '#4ade80');
+                    startOtpCooldown(prefix, 60);
+                } else {
+                    setOtpStatus(prefix, data.error || 'Could not send code.', '#ff6b6b');
+                    if (data.cooldownRemaining) startOtpCooldown(prefix, data.cooldownRemaining); else btn.disabled = false;
+                }
+            } catch (e) { setOtpStatus(prefix, 'Connection error.', '#ff6b6b'); btn.disabled = false; }
+        }
+
+        function startOtpCooldown(prefix, seconds) {
+            const btn = document.getElementById(prefix + '-sendOtpBtn'); btn.disabled = true;
+            let remaining = seconds; btn.innerText = `Resend (${remaining}s)`;
+            clearInterval(cooldownTimers[prefix]);
+            cooldownTimers[prefix] = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) { clearInterval(cooldownTimers[prefix]); btn.disabled = false; btn.innerText = prefix === 'buy' ? 'Send Code' : 'Send Verification Code'; }
+                else btn.innerText = `Resend (${remaining}s)`;
+            }, 1000);
+        }
+
+        async function verifyOtp(emailFieldId, purpose, prefix) {
+            const email = document.getElementById(emailFieldId).value.trim();
+            const code = document.getElementById(prefix + '-otpCode').value.trim();
+            if (!code) { setOtpStatus(prefix, 'Enter the code from your email.', '#ff6b6b'); return; }
+            const form = new URLSearchParams(); form.append('email', email); form.append('purpose', purpose); form.append('code', code);
+            try {
+                const res = await fetch('email_otp.php?action=verify_otp', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    otpVerified[prefix] = true;
+                    setOtpStatus(prefix, '✅ Email verified.', '#4ade80');
+                    document.getElementById(prefix + '-otpRow').style.display = 'none';
+                    document.getElementById(prefix + '-sendOtpBtn').style.display = 'none';
+                    updateContinueButtons();
+                } else { setOtpStatus(prefix, data.error || 'Incorrect code.', '#ff6b6b'); }
+            } catch (e) { setOtpStatus(prefix, 'Connection error.', '#ff6b6b'); }
+        }
+
+        function updateContinueButtons() {
+            const payBtn = document.getElementById('pay-btn');
+            payBtn.disabled = !otpVerified.buy;
+            payBtn.innerText = otpVerified.buy ? 'Proceed to Secure Payment' : 'Verify your email to continue';
+            const finalizeBtn = document.getElementById('finalize-btn');
+            finalizeBtn.disabled = !otpVerified.reg;
+            finalizeBtn.innerText = otpVerified.reg ? 'Finalize Admin Panel' : 'Verify your email to continue';
+        }
+
+        function switchTab(type) {
+            document.getElementById('tab-buy').classList.toggle('active', type === 'buy'); document.getElementById('tab-verify').classList.toggle('active', type === 'verify');
+            document.getElementById('view-buy').classList.toggle('active', type === 'buy'); document.getElementById('view-verify').classList.toggle('active', type === 'verify');
+            document.getElementById('view-setup').classList.remove('active'); document.getElementById('status-msg').innerText = '';
+        }
+        async function initiateCashfreePayment() {
+            const name = document.getElementById('b-name').value.trim(); const email = document.getElementById('b-email').value.trim();
+            const phone = document.getElementById('b-phone').value.trim(); const dob = document.getElementById('b-dob').value.trim();
+            const msg = document.getElementById('status-msg');
+            if (!otpVerified.buy) { msg.style.color = '#ff6b6b'; msg.innerText = 'Please verify your email first.'; return; }
+            if (!name || !email || !phone || !dob) { msg.style.color = '#ff6b6b'; msg.innerText = 'Please fill out all credentials.'; return; }
+            const btn = document.getElementById('pay-btn'); btn.disabled = true; btn.innerText = 'Initializing...';
+            const form = new URLSearchParams(); form.append('name', name); form.append('email', email); form.append('phone', phone); form.append('dob', dob);
+            try {
+                const res = await fetch('payment_api.php?action=create_order', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.status === 'success') cashfree.checkout({ paymentSessionId: data.payment_session_id, redirectTarget: "_self" });
+                else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; btn.disabled = false; btn.innerText = 'Proceed to Secure Payment'; }
+            } catch (e) { msg.innerText = 'Connection error.'; btn.disabled = false; }
+        }
+        async function verifyAndResume() {
+            const email = document.getElementById('v-email').value.trim(); const dob = document.getElementById('v-dob').value.trim();
+            const msg = document.getElementById('status-msg');
+            const form = new URLSearchParams(); form.append('email', email); form.append('dob', dob);
+            const res = await fetch('payment_api.php?action=resume_setup', { method: 'POST', body: form });
+            const data = await res.json();
+            // 'resume' — this is specifically someone returning after closing
+            // the tab or refreshing mid-payment (possibly much later, or in a
+            // different browser), so a fresh email verification is required.
+            if (data.status === 'success') showSetupScreen(data.order_id, data.email, 'resume'); else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+        }
+        let regVia = 'direct';
+        function showSetupScreen(orderId, email, via) {
+            regVia = via || 'direct';
+            document.getElementById('view-buy').classList.remove('active'); document.getElementById('view-verify').classList.remove('active');
+            document.getElementById('view-setup').classList.add('active'); document.getElementById('reg-order-id').value = orderId; document.getElementById('status-msg').innerText = '';
+            document.getElementById('reg-email').value = email || '';
+            const otpBlock = document.getElementById('reg-otp-block');
+            if (regVia === 'resume') {
+                // Ask again — email was verified once before payment, but that
+                // was potentially a while ago or in another browser session.
+                otpBlock.style.display = '';
+                document.getElementById('reg-emailNotice').innerText = email ? `Verifying: ${email}` : '';
+                otpVerified.reg = false;
+            } else {
+                // Straight back from Cashfree in the same session — already
+                // verified moments ago at the "buy" step, don't ask twice.
+                otpBlock.style.display = 'none';
+                document.getElementById('reg-emailNotice').innerText = email ? `Email verified: ${email}` : '';
+                otpVerified.reg = true;
+            }
+            updateContinueButtons();
+        }
+        async function submitAdminAccount() {
+            const order_id = document.getElementById('reg-order-id').value; const username = document.getElementById('reg-user').value.trim();
+            const password = document.getElementById('reg-pass').value.trim(); const msg = document.getElementById('status-msg');
+            if (!otpVerified.reg) { msg.style.color = '#ff6b6b'; msg.innerText = 'Please verify your email first.'; return; }
+            if (!/^[a-zA-Z0-9]+$/.test(username) || !/^[a-zA-Z0-9]+$/.test(password)) { msg.style.color = '#ff6b6b'; msg.innerText = 'Alphanumeric only.'; return; }
+            const form = new URLSearchParams(); form.append('order_id', order_id); form.append('username', username); form.append('password', password); form.append('via', regVia);
+            const res = await fetch('payment_api.php?action=complete_admin_registration', { method: 'POST', body: form });
+            const data = await res.json();
+            if (data.status === 'success') { msg.style.color = '#4ade80'; msg.innerText = data.message; setTimeout(() => window.location.href = 'dash_login.html', 2500); } 
+            else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+        }
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.has('order_id')) {
+            fetch('payment_api.php?action=verify_order&order_id=' + encodeURIComponent(urlParams.get('order_id')))
+                .then(r => r.json()).then(data => {
+                    if (data.status === 'success') showSetupScreen(urlParams.get('order_id'), data.email, 'direct'); 
+                    else { document.getElementById('status-msg').style.color = '#ff6b6b'; document.getElementById('status-msg').innerText = data.error; }
+                });
+        }
+    </script>
+</body>
+</html>

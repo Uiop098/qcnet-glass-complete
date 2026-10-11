@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — States</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="page" id="page-states">
+    <div class="rooms-header">
+      <h2 class="fdisp">🧪 States</h2>
+      <a class="back-link" href="welcome.html">← back</a>
+    </div>
+
+    <div class="states-tabs glass flat">
+      <button class="active" data-state="banned">Banned</button>
+      <button data-state="notfound">Not found</button>
+      <button data-state="muted">Muted</button>
+      <button data-state="empty">Empty room</button>
+    </div>
+
+    <div class="state-panel active glass" id="state-banned">
+      <div class="s-icon">🚫</div>
+      <h3 class="fdisp">You've been removed</h3>
+      <p>The host removed you from this chat.<br/>Contact them if you think this was a mistake.</p>
+      <a class="btn-primary" style="width:100%" href="login.html">Back to login</a>
+    </div>
+
+    <div class="state-panel glass" id="state-notfound">
+      <div class="s-icon">❓</div>
+      <h3 class="fdisp">This room doesn't exist yet</h3>
+      <p>Ask the host to log in first and set a PIN,<br/>or double-check the room name.</p>
+      <a class="btn-primary" style="width:100%" href="login.html">Try again</a>
+    </div>
+
+    <div class="state-panel glass" id="state-muted">
+      <div class="s-icon">🔇</div>
+      <h3 class="fdisp">You're muted</h3>
+      <p>A host muted you for 5 more minutes.<br/>You can still read messages.</p>
+      <a class="btn-primary" style="width:100%" href="room.html">OK</a>
+    </div>
+
+    <div class="state-panel glass" id="state-empty">
+      <div class="s-icon">🈳</div>
+      <h3 class="fdisp">No messages yet</h3>
+      <p>This room is quiet right now.<br/>Be the first to say something.</p>
+      <a class="btn-primary" style="width:100%" href="room.html">Say hi 👋</a>
+    </div>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+document.querySelectorAll('.states-tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.states-tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.state-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('state-' + btn.dataset.state).classList.add('active');
+  });
+});
+
+// If a real page redirected here with ?state=X, jump straight to that
+// panel instead of the default "banned" tab.
+const requested = new URLSearchParams(window.location.search).get('state');
+if (requested && document.getElementById('state-' + requested)) {
+  document.querySelectorAll('.states-tabs button').forEach(b => b.classList.toggle('active', b.dataset.state === requested));
+  document.querySelectorAll('.state-panel').forEach(p => p.classList.toggle('active', p.id === 'state-' + requested));
+}
+</script>
+</body>
+</html>

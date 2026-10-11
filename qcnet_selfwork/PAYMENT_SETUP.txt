@@ -1,0 +1,93 @@
+QuickChat — Super Access Payments (built-in, single-site, Cashfree PRODUCTION)
+================================================================================
+
+Payment lives entirely under /payment/ on this same site — no separate
+domain, no shared secret, no cross-domain network calls.
+
+⚠️  THIS IS CONFIGURED FOR PRODUCTION — real payments, real money.
+    Test everything with Cashfree's SANDBOX credentials first (see
+    "Testing before going live" at the bottom) before switching
+    config.php over to your production keys.
+
+SETUP STEPS
+-----------
+1. In your InfinityFree control panel, create a MySQL database (or
+   reuse your existing one), then run payment/schema.sql in phpMyAdmin
+   (SQL tab -> paste -> Go). This creates one table: `tokens`.
+
+   If you previously had the Razorpay version of this table installed,
+   drop it first — Cashfree uses different column names and rupees
+   instead of paise:
+     DROP TABLE IF EXISTS tokens;
+   ...then run the new payment/schema.sql.
+
+2. Get PRODUCTION API keys from Cashfree:
+   - Log into https://merchant.cashfree.com
+   - Complete business KYC under Settings -> Business Settings if you
+     haven't already — Cashfree will not issue Production keys without
+     this being approved.
+   - Go to Developers -> API Keys -> Production tab
+   - Copy the Client ID and Client Secret
+
+3. Edit payment/config.php:
+     DB_HOST, DB_NAME, DB_USER, DB_PASS   — your MySQL details
+     CASHFREE_MODE                        — leave as 'production'
+     CASHFREE_APP_ID                      — your Production Client ID
+     CASHFREE_SECRET_KEY                  — your Production Client Secret
+     OFFER_AMOUNT_INR                     — real price in rupees (this
+                                             ships set to ₹1 as a
+                                             placeholder — change it!)
+
+4. Set up the webhook (this is what confirms payment even if the
+   buyer's browser never makes it back to your site):
+   - On Cashfree merchant dashboard: Developers -> Webhooks -> Add Webhook
+   - URL: https://yourdomain.com/payment/webhook.php
+   - Event: PAYMENT_SUCCESS_WEBHOOK
+   - No separate webhook secret to configure — Cashfree signs webhooks
+     with your Client Secret, which config.php already has.
+
+5. Upload the whole site to your htdocs, including /payment/,
+   buy_redirect.php, common.php, redeem.php, and login.html.
+
+6. Test with a REAL small payment (e.g. keep OFFER_AMOUNT_INR at 1
+   rupee for your first live test) before raising the price and
+   announcing it to users.
+
+HOW A PURCHASE FLOWS
+---------------------
+1. Buyer clicks "Buy Super Access" on login.html -> buy_redirect.php
+   sets a 20-minute session flag -> redirects to payment/buy.php.
+2. payment/buy.php checks that flag (blocks direct visits without it),
+   shows the offer, calls create_order.php to open a Cashfree order.
+3. Cashfree's JS SDK takes over the full page (redirectTarget: '_self')
+   to show their hosted checkout (cards/UPI/wallets/netbanking).
+4. Cashfree redirects the browser back to payment/return.php, which
+   re-checks the order status directly against Cashfree's API (never
+   trusts the redirect alone) and shows the one-time token.
+5. Buyer pastes that token into QuickChat's Login -> Redeem tab.
+   redeem.php checks it against the SAME database directly (no network
+   call needed, since it's all one site) and creates their account.
+6. webhook.php is the fallback/authoritative path — it independently
+   confirms the same payment server-to-server in case step 4 never
+   completes (closed tab, lost connection, etc).
+
+TESTING BEFORE GOING LIVE
+---------------------------
+Before pointing this at Production, it's worth doing a full dry run on
+Cashfree's Sandbox first:
+  1. Temporarily set in config.php:
+       CASHFREE_MODE = 'sandbox'
+       CASHFREE_APP_ID / CASHFREE_SECRET_KEY = your Sandbox keys
+       (from https://sandbox.cashfree.com/pg/apps or the Sandbox tab
+       under Developers -> API Keys)
+  2. Use Cashfree's published test card/UPI details (see their docs —
+     search "Cashfree test credentials sandbox") to complete a full
+     purchase end-to-end.
+  3. Once that works, switch CASHFREE_MODE and the two keys back to
+     'production' and your real Production credentials.
+
+WHAT TO DELETE
+---------------
+If you previously ran a separate payment-gateway site on its own
+domain, or an old Razorpay-based setup, you can retire/remove those —
+everything now lives under /payment/ on this one site.

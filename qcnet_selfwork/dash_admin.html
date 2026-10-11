@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Admin Portal</title>
+    <link rel="stylesheet" href="dash_style.css">
+</head>
+<body>
+    <div class="blob"></div><div class="blob b2"></div>
+    <nav class="sidebar glass-panel fade-in">
+        <h2 style="margin-top:5px; margin-bottom:15px; color:#4ade80;">🛡️ Admin</h2>
+        <button onclick="renderUI('dashboard_home')">📊 Home / Stats</button>
+        <button onclick="renderUI('users')">👥 Contacts</button>
+        <button onclick="window.location.href='dash_chat.html'">💬 Chat</button>
+        <button onclick="renderUI('payments')">💳 Payments</button>
+        <button onclick="renderUI('products')">🛍️ Memberships</button>
+        <button onclick="window.location.href='dash_profile.html'">👤 My Profile</button>
+        <button onclick="window.location.href='dash_settings.html'">⚙️ Business Settings</button>
+        <button onclick="renderUI('settings')">🔑 Payment Keys (E2EE)</button>
+        <div style="margin-top: auto;"><hr>
+            <button onclick="window.location.href='login.html'" style="width:100%; margin-bottom:10px; background:rgba(139,92,246,0.2); border-color:#8b5cf6; color:#c4b5fd;">💬 Open QuickChat</button>
+            <button onclick="window.location.href='pay.html?from=dashboard'" style="width:100%; margin-bottom:10px; background:rgba(74, 222, 128, 0.2); border-color:#4ade80; color:#4ade80;">🛒 Buy Portal</button>
+            <button onclick="window.location.href='dash_theme_studio.html'" style="width:100%; margin-bottom:10px;">🎨 Theme Studio</button>
+            <button onclick="window.location.href='dash_master_admins.html'" id="masterControlLink" style="display:none; width:100%; margin-bottom:10px; background:color-mix(in srgb, var(--dash-accent) 25%, transparent); border-color:var(--dash-accent); color:var(--dash-accent);">👑 Master Control</button>
+            <button onclick="logout()" style="width:100%; background:rgba(255,107,107,0.2); color:#ff6b6b; border-color:#ff6b6b;">Log Out</button>
+        </div>
+    </nav>
+    <main class="main-content">
+        <div id="top-bar" class="top-bar glass-panel fade-in">Loading User Info...</div>
+        <div class="glass-panel fade-in" style="padding:25px;">
+            <header><h1 id="module-title" style="margin-top:0; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:15px;">Dashboard</h1></header>
+            <div id="content-area"><p>Loading system records...</p></div>
+        </div>
+    </main>
+    <script src="dash_script.js"></script>
+</body>
+</html>

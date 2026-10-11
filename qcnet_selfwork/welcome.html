@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Welcome</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Performance</div>
+    <div class="toggle-row">🐢 Lite mode (low-end device)
+      <label class="toggle-switch"><input type="checkbox" id="prefLiteMode"><span class="knob"></span></label>
+    </div>
+    <div class="hint-text" style="margin-top:-4px;">Turns off blur, wallpaper, and all animation — just the theme's flat colour. Applies everywhere, on every page.</div>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="page" id="page-welcome">
+    <div class="welcome-hero glass flat">
+      <div class="mark">✨</div>
+      <h1 class="fdisp">QuickChat</h1>
+      <p>Private rooms. Real roles. Total control.</p>
+    </div>
+    <div class="feature-chips">
+      <div class="chip glass flat"><span class="ic">🔒</span>Encrypted</div>
+      <div class="chip glass flat"><span class="ic">👑</span>Super roles</div>
+      <div class="chip glass flat"><span class="ic">🎨</span>Themeable</div>
+    </div>
+    <a class="btn-primary" href="login.html">Get Started →</a>
+    <a class="back-link states-link" href="states.html">🧪 Preview error &amp; empty states</a>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+// If already logged in this tab, skip straight to chat.
+if (getSession()) window.location.href = 'room.html';
+
+document.getElementById('prefLiteMode').checked = !!getPrefs().liteMode;
+document.getElementById('prefLiteMode').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { liteMode: e.target.checked })));
+</script>
+</body>
+</html>

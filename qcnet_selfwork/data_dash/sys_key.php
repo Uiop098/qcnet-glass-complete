@@ -1,0 +1,1 @@
+<?php define('DASH_ENC_KEY', hex2bin('b9b4168d91ac2aed0314a1a7d3db4234be0f75cfc4764ecb5b41880e2f3d2b39')); ?>

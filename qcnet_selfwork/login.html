@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Login</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div id="toastArea" class="toast-area"></div>
+  <div class="page" id="page-login">
+    <div class="login-title fdisp">QuickChat Glass</div>
+    <div class="login-sub">JOIN · HOST · SUPER ACCESS</div>
+
+    <div class="login-tabs glass flat">
+      <button class="active" data-tab="member">Join Chat</button>
+      <button data-tab="host">Host Login</button>
+      <button class="super-tab" data-tab="super">👑 Super</button>
+    </div>
+
+    <div class="login-panel active" id="tab-member">
+      <div class="field"><label>ROOM NAME</label><input id="mRoom" placeholder="e.g. raj-room-1" /></div>
+      <div class="field"><label>ROOM PIN</label><input id="mPin" placeholder="••••" inputmode="numeric" /></div>
+      <div class="field"><label>YOUR NAME</label><input id="mName" placeholder="Your name" /></div>
+      <div class="field"><label>ENCRYPTION KEY (OPTIONAL)</label><input id="mEncKey" type="password" placeholder="Only if this room uses one" /></div>
+      <label class="check-row"><input type="checkbox" id="mRemember" /> Remember me on this device</label>
+      <button class="btn-primary" id="mSubmit">Join Chat</button>
+      <div class="hint-text">Ask the host for the room name and PIN.</div>
+    </div>
+
+    <div class="login-panel" id="tab-host">
+      <div class="field"><label>ROOM NAME</label><input id="hRoom" placeholder="Room name" /></div>
+      <div class="field"><label>HOST PASSWORD</label><input id="hPass" type="password" placeholder="Host password" /></div>
+      <div class="field"><label>SET / CHANGE PIN (OPTIONAL)</label><input id="hNewPin" placeholder="New PIN" inputmode="numeric" /></div>
+      <div class="field"><label>ENCRYPTION KEY (OPTIONAL)</label><input id="hEncKey" type="password" placeholder="Only if this room uses one" /></div>
+      <label class="check-row"><input type="checkbox" id="hRemember" /> Remember me on this device</label>
+      <button class="btn-primary" id="hSubmit">Login as Host</button>
+      <div class="hint-text">First login for a new room sets this as the host password.</div>
+    </div>
+
+    <div class="login-panel" id="tab-super">
+      <div class="premium-badge">👑 PREMIUM ACCESS</div>
+      <div id="super-password-step">
+        <div class="field"><label>SUPER USERNAME</label><input id="sUser" placeholder="Super username" /></div>
+        <div class="field"><label>SUPER PASSWORD</label><input id="sPass" type="password" placeholder="Super password" /></div>
+        <button class="btn-primary btn-super" id="sSubmit">Login</button>
+        <div class="hint-text">Bypasses the room PIN. Browse every room next.</div>
+        <div class="hint-text" style="margin-top:8px">Don't have super access yet? <a href="pay.html?from=quickchat" style="color:var(--accent)">Buy your Business & Chat Portal →</a></div>
+        <div class="hint-text" style="margin-top:4px">Your Dashboard Admin credentials automatically work here!</div>
+        <div class="hint-text" style="margin-top:4px">Already have a Dashboard account? <a href="dash_login.html" style="color:var(--accent)">Go to UB Business Dashboard →</a></div>
+      </div>
+      <div id="super-2fa-step" style="display:none">
+        <div class="field"><label>TWO-FACTOR CODE</label><input id="s2faCode" placeholder="6-digit code or recovery code" maxlength="20" /></div>
+        <button class="btn-primary btn-super" id="s2faSubmit">Verify</button>
+        <div class="hint-text">Enter the code from your authenticator app — or a recovery code if you've lost access to it.</div>
+        <div class="hint-text" style="margin-top:8px"><a href="#" id="s2faBack" style="color:var(--accent)">← Start over</a></div>
+      </div>
+    </div>
+
+    <a class="back-link" style="margin-top:14px" href="welcome.html">← Back</a>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+document.querySelectorAll('.login-tabs button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.login-tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.login-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+const params = new URLSearchParams(window.location.search);
+if (params.get('msg')) showToast(params.get('msg'), 'error');
+
+function enterChat(token, role, user, room, rememberToken, encKey) {
+  setSession({ token, role, user, room });
+  if (rememberToken) setRemember(rememberToken);
+  if (encKey) cacheRoomPassphrase(room, encKey);
+  window.location.href = 'room.html';
+}
+
+function setBusy(btn, busy) { btn.disabled = busy; }
+
+document.getElementById('mSubmit').addEventListener('click', async () => {
+  const room = document.getElementById('mRoom').value.trim(); const pin = document.getElementById('mPin').value.trim();
+  const username = document.getElementById('mName').value.trim(); const encKey = document.getElementById('mEncKey').value;
+  const remember = document.getElementById('mRemember').checked;
+  if (!room || !pin || !username) { showToast('Please fill in room, PIN, and your name.', 'error'); return; }
+  const btn = document.getElementById('mSubmit'); setBusy(btn, true);
+  try {
+    const { res, data } = await apiPost(API.auth, { action: 'member', room, pin, username, remember });
+    if (!res.ok || !data.ok) { showToast((data.message || data.error || 'Failed to join.'), 'error'); return; }
+    enterChat(data.token, data.role, data.user, data.room, data.rememberToken, encKey);
+  } catch (e) { showToast('Could not reach server.', 'error'); } finally { setBusy(btn, false); }
+});
+
+document.getElementById('hSubmit').addEventListener('click', async () => {
+  const room = document.getElementById('hRoom').value.trim(); const hostPassword = document.getElementById('hPass').value;
+  const newPin = document.getElementById('hNewPin').value.trim(); const encKey = document.getElementById('hEncKey').value;
+  const remember = document.getElementById('hRemember').checked;
+  if (!room || !hostPassword) { showToast('Room and host password are required.', 'error'); return; }
+  const btn = document.getElementById('hSubmit'); setBusy(btn, true);
+  try {
+    const { res, data } = await apiPost(API.auth, { action: 'host', room, hostPassword, newPin, remember });
+    if (!res.ok || !data.ok) { showToast((data.message || data.error || 'Failed to log in.'), 'error'); return; }
+    if (!data.pinIsSet) showToast('Logged in — set a PIN above so members can join.', 'info');
+    enterChat(data.token, data.role, data.user, data.room, data.rememberToken, encKey);
+  } catch (e) { showToast('Could not reach server.', 'error'); } finally { setBusy(btn, false); }
+});
+
+document.getElementById('sSubmit').addEventListener('click', async () => {
+  const superUsername = document.getElementById('sUser').value.trim(); const superPassword = document.getElementById('sPass').value;
+  if (!superUsername || !superPassword) { showToast('Username and password are required.', 'error'); return; }
+  const btn = document.getElementById('sSubmit'); setBusy(btn, true);
+  try {
+    const { res, data } = await apiPost(API.auth, { action: 'super_login', superUsername, superPassword });
+    if (!res.ok || !data.ok) { showToast((data.message || data.error || 'Login failed.'), 'error'); return; }
+    if (data.twofaRequired) {
+      // Cross-system bridge: if this account already passed 2FA on the
+      // Dashboard recently, the server skips this and returns masterToken
+      // directly instead — this branch only fires when a fresh code is
+      // actually needed.
+      pending2faToken = data.pendingToken; pending2faUsername = superUsername;
+      document.getElementById('super-password-step').style.display = 'none';
+      document.getElementById('super-2fa-step').style.display = '';
+      return;
+    }
+    setMasterToken(data.masterToken, data.defaultDisplayName, data.superUsername, data.tier);
+    window.location.href = (data.tier === 'tenant') ? 'tenant_super.html' : 'rooms.html';
+  } catch (e) { showToast('Could not reach server.', 'error'); } finally { setBusy(btn, false); }
+});
+
+let pending2faToken = null, pending2faUsername = null;
+document.getElementById('s2faSubmit').addEventListener('click', async () => {
+  const code = document.getElementById('s2faCode').value.trim();
+  if (!code) { showToast('Enter the code.', 'error'); return; }
+  const btn = document.getElementById('s2faSubmit'); setBusy(btn, true);
+  try {
+    const { res, data } = await apiPost(API.auth, { action: 'super_verify_2fa', pendingToken: pending2faToken, code });
+    if (!res.ok || !data.ok) { showToast((data.message || data.error || 'Incorrect code.'), 'error'); return; }
+    setMasterToken(data.masterToken, data.defaultDisplayName, data.superUsername, data.tier);
+    window.location.href = (data.tier === 'tenant') ? 'tenant_super.html' : 'rooms.html';
+  } catch (e) { showToast('Could not reach server.', 'error'); } finally { setBusy(btn, false); }
+});
+document.getElementById('s2faBack').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('super-2fa-step').style.display = 'none';
+  document.getElementById('super-password-step').style.display = '';
+  document.getElementById('s2faCode').value = ''; pending2faToken = null;
+});
+
+(async function tryRememberLogin() {
+  if (getSession()) return; 
+  const saved = getRemember(); if (!saved || !saved.rememberToken) return;
+  try {
+    const { res, data } = await apiPost(API.auth, { action: 'remember_login', rememberToken: saved.rememberToken });
+    if (res.ok && data.ok) {
+      setSession({ token: data.token, role: data.role, user: data.user, room: data.room }); setRemember(data.rememberToken); window.location.href = 'room.html';
+    } else { clearRemember(); }
+  } catch (e) { }
+})();
+</script>
+</body>
+</html>

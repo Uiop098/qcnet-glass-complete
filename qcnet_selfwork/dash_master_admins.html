@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All Businesses — Master Admin</title>
+<link rel="stylesheet" href="dash_style.css">
+<style>
+    .section-card { padding:22px; margin-bottom:18px; }
+    .admin-row { display:flex; align-items:center; gap:14px; padding:14px 0; border-bottom:1px solid var(--dash-border); flex-wrap:wrap; }
+    .admin-row:last-child { border-bottom:none; }
+    .admin-avatar { width:44px; height:44px; border-radius:12px; background:var(--dash-accent); display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0; }
+    .admin-meta { flex:1; min-width:180px; }
+    .admin-meta .biz-name { font-weight:700; }
+    .admin-meta .sub { font-size:12px; color:var(--dash-muted); }
+    .status-chip { font-size:10px; padding:3px 9px; border-radius:999px; font-weight:600; }
+    .status-chip.active { background:color-mix(in srgb, var(--dash-success) 18%, transparent); color:var(--dash-success); }
+    .status-chip.deactivated { background:color-mix(in srgb, var(--dash-danger) 18%, transparent); color:var(--dash-danger); }
+    .admin-stats { display:flex; gap:16px; font-size:12px; color:var(--dash-muted); }
+    .admin-stats b { color:var(--dash-text); font-size:14px; display:block; }
+    .drill-panel { display:none; margin-top:10px; padding:14px; border-radius:10px; background:rgba(0,0,0,0.2); }
+    .drill-panel.open { display:block; }
+    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:60; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; }
+    .modal.active { display:flex; }
+    .modal-box { width:100%; max-width:420px; padding:25px; display:flex; flex-direction:column; gap:12px; box-sizing:border-box; }
+</style>
+</head>
+<body>
+<div class="blob"></div><div class="blob b2"></div>
+
+<nav class="sidebar glass-panel fade-in">
+    <h2 style="margin-top:5px; color:var(--dash-accent);">👑 Master Control</h2>
+    <button onclick="window.location.href='dash_admin.html'">← Back to Dashboard</button>
+    <div style="margin-top:auto;"><hr style="border-color:var(--dash-border);"><button onclick="logout()">🚪 Log Out</button></div>
+</nav>
+
+<main class="main-content">
+    <div id="top-bar" class="top-bar glass-panel fade-in"><div class="user-info">Every business, every admin, every user — in one place</div></div>
+
+    <div class="stats-grid fade-in">
+        <div class="stat-card"><h3>Total Businesses</h3><div class="val" id="statBiz">—</div></div>
+        <div class="stat-card"><h3>Total Users (all businesses)</h3><div class="val" id="statUsers">—</div></div>
+        <div class="stat-card"><h3>Active</h3><div class="val" id="statActive">—</div></div>
+        <div class="stat-card"><h3>Deactivated</h3><div class="val" id="statDeact">—</div></div>
+    </div>
+
+    <div class="section-card glass-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+            <h3 style="margin:0;">🏢 All Businesses</h3>
+            <button class="primary-btn" onclick="openModal('addAdminModal')">+ Add Admin (via Token)</button>
+        </div>
+        <div id="adminList" style="margin-top:14px;"><p style="color:var(--dash-muted); font-size:13px;">Loading…</p></div>
+    </div>
+</main>
+
+<div class="modal" id="addAdminModal"><div class="modal-box glass-panel">
+    <h3 style="margin-top:0;">➕ Invite a New Admin</h3>
+    <p style="font-size:12px; color:var(--dash-muted); margin-top:0;">Generates a one-time token, valid 24 hours, that lets someone register a new business without going through payment.</p>
+    <input type="text" id="na-business" placeholder="Business name">
+    <input type="email" id="na-email" placeholder="Their email address">
+    <div id="naMsg" style="font-size:12px;"></div>
+    <div style="display:flex; gap:10px;"><button class="primary-btn" style="flex:1;" onclick="createAdminToken()">Generate Token</button><button style="flex:1;" onclick="closeModal('addAdminModal')">Close</button></div>
+</div></div>
+
+<script src="dash_script.js"></script>
+<script>
+async function checkAuthAndLoad() {
+    const res = await fetch('dash_auth.php?action=check_auth');
+    const data = await res.json();
+    if (data.status !== 'success' || data.role !== 'admin') { window.location.href = 'dash_login.html'; return; }
+    loadOverview();
+}
+function logout() { fetch('dash_auth.php?action=logout').then(() => window.location.href = 'dash_login.html'); }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+let overviewCache = null;
+async function loadOverview() {
+    const res = await fetch('dash_master_api.php?action=get_overview');
+    const data = await res.json();
+    if (data.status !== 'success') {
+        document.getElementById('adminList').innerHTML = `<p style="color:var(--dash-danger);">${data.error || 'Only the default super admin can view this.'}</p>`;
+        return;
+    }
+    overviewCache = data;
+    const active = data.admins.filter(a => a.status === 'active').length;
+    document.getElementById('statBiz').textContent = data.admins.length;
+    document.getElementById('statUsers').textContent = data.total_users;
+    document.getElementById('statActive').textContent = active;
+    document.getElementById('statDeact').textContent = data.admins.length - active;
+
+    document.getElementById('adminList').innerHTML = data.admins.length ? data.admins.map((a, i) => `
+        <div class="admin-row">
+            <div class="admin-avatar">${a.business_name.charAt(0).toUpperCase()}</div>
+            <div class="admin-meta">
+                <div class="biz-name">${a.business_name} <span class="status-chip ${a.status}">${a.status}</span></div>
+                <div class="sub">@${a.username} · ${a.email || 'no email on file'}${a.twofa_enabled ? ' · 🔐 2FA on' : ''}</div>
+            </div>
+            <div class="admin-stats">
+                <div><b>${a.user_count}</b>users</div>
+                <div><b>₹${a.revenue}</b>revenue</div>
+            </div>
+            <button onclick="toggleDrill(${i})">👥 View Users</button>
+            <button onclick="setAdminStatus('${a.username}', '${a.status === 'active' ? 'deactivated' : 'active'}')" style="${a.status === 'active' ? 'background:color-mix(in srgb, var(--dash-danger) 20%, transparent); color:var(--dash-danger);' : 'background:color-mix(in srgb, var(--dash-success) 20%, transparent); color:var(--dash-success);'}">${a.status === 'active' ? 'Remove Access' : 'Restore Access'}</button>
+            <div class="drill-panel" id="drill-${i}"></div>
+        </div>
+    `).join('') : '<p style="color:var(--dash-muted); font-size:13px;">No businesses yet.</p>';
+}
+
+async function toggleDrill(i) {
+    const panel = document.getElementById('drill-' + i);
+    if (panel.classList.contains('open')) { panel.classList.remove('open'); return; }
+    panel.classList.add('open'); panel.innerHTML = 'Loading…';
+    const tenantId = overviewCache.admins[i].tenant_id;
+    const res = await fetch('dash_master_api.php?action=get_tenant_users&tenant_id=' + encodeURIComponent(tenantId));
+    const data = await res.json();
+    if (data.status !== 'success' || !data.users.length) { panel.innerHTML = '<span style="font-size:12px; color:var(--dash-muted);">No users under this admin yet.</span>'; return; }
+    panel.innerHTML = data.users.map(u => `<div style="font-size:12px; padding:6px 0; border-bottom:1px solid var(--dash-border); display:flex; justify-content:space-between;"><span>${u.name || u.username} (@${u.username})</span><span style="color:var(--dash-muted);">${u.status}</span></div>`).join('');
+}
+
+async function setAdminStatus(username, status) {
+    if (status === 'deactivated' && !confirm(`Remove dashboard/chat access for "${username}"? Their business data stays intact and this can be reversed.`)) return;
+    const res = await fetch('dash_master_api.php?action=set_admin_status', { method: 'POST', body: new URLSearchParams({ username, status }) });
+    const data = await res.json();
+    if (data.status === 'success') loadOverview(); else alert(data.error);
+}
+
+async function createAdminToken() {
+    const business_name = document.getElementById('na-business').value.trim();
+    const email = document.getElementById('na-email').value.trim();
+    const msg = document.getElementById('naMsg');
+    const res = await fetch('dash_master_api.php?action=create_admin_token', { method: 'POST', body: new URLSearchParams({ business_name, email }) });
+    const data = await res.json();
+    if (data.status === 'success') {
+        msg.style.color = 'var(--dash-success)';
+        msg.innerHTML = `Token: <b style="font-family:monospace; font-size:16px; letter-spacing:2px;">${data.token}</b><br>Share this with them along with the link: <code>dash_admin_setup.html</code>. Expires in 24 hours.`;
+    } else { msg.style.color = 'var(--dash-danger)'; msg.innerText = data.error; }
+}
+
+checkAuthAndLoad();
+</script>
+</body>
+</html>

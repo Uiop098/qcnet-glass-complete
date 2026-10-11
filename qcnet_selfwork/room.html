@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+<script>
+  // Dashboard theme sync — only applies when opened embedded from the
+  // dashboard's Chat panel (dash_msg.php passes ?syncTheme=<id> based on
+  // the admin's current dashboard accent color). A normal QuickChat visit
+  // (no syncTheme param) is completely unaffected and keeps using its own
+  // saved glass_preview_theme as before. Runs before glass-theme.js so
+  // there's no flash of the wrong theme.
+  (function () {
+    var params = new URLSearchParams(window.location.search);
+    var sync = params.get('syncTheme');
+    if (sync && ['nocturne', 'aurora', 'ember', 'frost'].indexOf(sync) !== -1) {
+      document.documentElement.setAttribute('data-pending-theme', sync);
+    }
+  })();
+</script>
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section" id="inviteQrSection" style="display:none;">
+    <div class="menu-section-label">Invite</div>
+    <a class="menu-link" href="#" id="inviteQrLink">🔗 Invite via QR (no password)</a>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Room</div>
+    <a class="menu-link" href="settings.html">⚙️ Room Settings</a>
+    <a class="menu-link" href="#" id="searchLink">🔍 Search messages</a>
+    <a class="menu-link" href="#" id="clearMineLink">🧹 Clear my messages</a>
+    <a class="menu-link" href="#" id="leaveLink">🚪 Leave</a>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Preferences</div>
+    <div class="menu-section-label" style="margin-top:2px;">View</div>
+    <div class="view-toggle" id="viewModeToggle">
+      <button class="view-opt active" data-view="auto">Auto</button>
+      <button class="view-opt" data-view="desktop">Desktop</button>
+      <button class="view-opt" data-view="mobile">Mobile</button>
+    </div>
+    <div class="toggle-row">🔔 Desktop notifications
+      <label class="toggle-switch"><input type="checkbox" id="prefDesktopNotif"><span class="knob"></span></label>
+    </div>
+    <div class="toggle-row">🔊 Notification sound
+      <label class="toggle-switch"><input type="checkbox" id="prefNotifSound"><span class="knob"></span></label>
+    </div>
+    <div class="toggle-row">🗜️ Compact mode
+      <label class="toggle-switch"><input type="checkbox" id="prefCompact"><span class="knob"></span></label>
+    </div>
+    <div class="toggle-row">🎞️ Reduce animations
+      <label class="toggle-switch"><input type="checkbox" id="prefReduceMotion"><span class="knob"></span></label>
+    </div>
+    <div class="toggle-row">🐢 Lite mode (low-end device)
+      <label class="toggle-switch"><input type="checkbox" id="prefLiteMode"><span class="knob"></span></label>
+    </div>
+    <div class="hint-text" style="margin-top:-4px;">Turns off blur, wallpaper, and all animation — just the theme's flat colour. Applies everywhere.</div>
+    <div class="toggle-row">💻 Auto-detect code blocks
+      <label class="toggle-switch"><input type="checkbox" id="prefAutoCode" checked><span class="knob"></span></label>
+    </div>
+  </div>
+  <div class="menu-section">
+    <details class="theme-accordion" id="themeAccordion">
+      <summary>
+        <span class="menu-section-label" style="margin:0;">UI Theme</span>
+        <span class="theme-current-chip"><span class="dot" id="themeCurrentDot"></span><span id="themeCurrentLabel">Nocturne</span></span>
+        <span class="accordion-chevron">▾</span>
+      </summary>
+      <div class="theme-switch" role="tablist" aria-label="UI theme">
+        <button data-theme="nocturne" data-label="Nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+        <button data-theme="aurora" data-label="Aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+        <button data-theme="ember" data-label="Ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+        <button data-theme="frost" data-label="Frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+        <button data-theme="sakura" data-label="Sakura" style="--dot:#ff8fb1" role="tab"><span class="dot"></span>Sakura</button>
+        <button data-theme="ocean" data-label="Ocean" style="--dot:#38bdf8" role="tab"><span class="dot"></span>Ocean</button>
+        <button data-theme="forest" data-label="Forest" style="--dot:#4ade80" role="tab"><span class="dot"></span>Forest</button>
+        <button data-theme="mono" data-label="Mono" style="--dot:#9ca3af" role="tab"><span class="dot"></span>Mono</button>
+        <button data-theme="sunset" data-label="Sunset" style="--dot:#f97362" role="tab"><span class="dot"></span>Sunset</button>
+        <button data-theme="neon" data-label="Neon" style="--dot:#ff2ec4" role="tab"><span class="dot"></span>Neon</button>
+        <button data-theme="wine" data-label="Wine" style="--dot:#d4457a" role="tab"><span class="dot"></span>Wine</button>
+        <button data-theme="mint" data-label="Mint" style="--dot:#34e0a1" role="tab"><span class="dot"></span>Mint</button>
+        <button data-theme="golden" data-label="Golden Glass" style="--dot:#ffd700" role="tab" class="super-exclusive-theme" hidden><span class="dot"></span>Golden Glass<span class="exclusive-tag">SUPER</span></button>
+        <button data-theme="platinum" data-label="Platinum" style="--dot:#b8860b" role="tab" class="super-exclusive-theme" hidden><span class="dot"></span>Platinum<span class="exclusive-tag">SUPER</span></button>
+        <button data-theme="obsidian" data-label="Obsidian" style="--dot:#d4af37" role="tab" class="super-exclusive-theme" hidden><span class="dot"></span>Obsidian<span class="exclusive-tag">SUPER</span></button>
+      </div>
+      <div class="toggle-row" id="applyThemeAllRow" hidden style="margin-top:6px;">Apply to everyone in room
+        <label class="toggle-switch"><input type="checkbox" id="applyThemeAllCheckbox"><span class="knob"></span></label>
+      </div>
+      <div id="themeAdvancedSection" hidden style="margin-top:12px;border-top:1px solid var(--border-glass);padding-top:12px;">
+        <div class="menu-section-label" style="margin:0 0 8px;">✨ Advanced (Super)</div>
+        <div class="toggle-row" style="align-items:center;">Custom glow colour
+          <input type="color" id="advGlowColorInput" value="#d4af37" style="width:40px;height:28px;border:none;border-radius:6px;background:none;cursor:pointer;" />
+        </div>
+        <div class="toggle-row" style="align-items:center;">Custom room background
+          <input type="color" id="advBgColorInput" value="#1b1030" style="width:40px;height:28px;border:none;border-radius:6px;background:none;cursor:pointer;" />
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <button class="settings-btn" style="flex:1;" id="advApplyBtn">Apply to room</button>
+          <button class="settings-btn" style="flex:1;" id="advResetBtn">Reset</button>
+        </div>
+        <div class="hint-text" style="margin-top:6px;">Full custom colours, no preset limits — applies room-wide immediately, same as forcing a theme.</div>
+      </div>
+    </details>
+  </div>
+  <div class="menu-section" id="superThemeSection" style="display:none;">
+    <div class="menu-section-label">✨ Super Controls</div>
+    <div class="menu-section-label" style="margin-top:2px;">Message Animation</div>
+    <select class="settings-input" id="superMsgAnimSelect" style="width:100%;">
+      <option value="">None</option>
+      <option value="slideGlow">Slide + Glow</option>
+      <option value="popSparkle">Pop + Sparkle</option>
+      <option value="rainbowSweep">Rainbow Sweep</option>
+      <option value="goldShimmer">Gold Shimmer</option>
+    </select>
+    <div class="toggle-row" style="margin-top:6px;">Apply animation to everyone
+      <label class="toggle-switch"><input type="checkbox" id="applyAnimAllCheckbox"><span class="knob"></span></label>
+    </div>
+  </div>
+</div>
+
+<!-- Message search -->
+<div class="qc-overlay" id="searchOverlay">
+  <div class="qc-sheet">
+    <div class="qc-sheet-header"><h3>🔍 Search this room</h3><button data-close-overlay="searchOverlay">✕</button></div>
+    <input class="settings-input" id="searchInput" placeholder="Search messages…" />
+    <div id="searchResults" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- Poll creation -->
+<div class="qc-overlay" id="pollOverlay">
+  <div class="qc-sheet">
+    <div class="qc-sheet-header"><h3>📊 New poll</h3><button data-close-overlay="pollOverlay">✕</button></div>
+    <input class="settings-input" id="pollQuestion" placeholder="Ask a question…" />
+    <div id="pollOptionsWrap" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+      <input class="settings-input" placeholder="Option 1">
+      <input class="settings-input" placeholder="Option 2">
+    </div>
+    <button class="settings-btn" style="width:100%;margin-top:8px" id="pollAddOptionBtn">+ Add option</button>
+    <button class="settings-btn primary" style="width:100%;margin-top:8px" id="pollCreateBtn">Create poll</button>
+  </div>
+</div>
+
+<!-- Sticker picker -->
+<div class="qc-overlay" id="stickerOverlay">
+  <div class="qc-sheet">
+    <div class="qc-sheet-header"><h3>🎟️ Stickers</h3><button data-close-overlay="stickerOverlay">✕</button></div>
+    <div class="emoji-grid" id="stickerGrid"></div>
+  </div>
+</div>
+
+<!-- GIF picker -->
+<div class="qc-overlay" id="gifOverlay">
+  <div class="qc-sheet">
+    <div class="qc-sheet-header"><h3>🎬 GIFs</h3><button data-close-overlay="gifOverlay">✕</button></div>
+    <input class="settings-input" id="gifSearchInput" placeholder="Search Tenor…" />
+    <div class="gif-grid" id="gifGrid" style="margin-top:10px"></div>
+  </div>
+</div>
+
+<!-- QR "scan to send a file" -->
+<div class="qc-overlay" id="qrOverlay">
+  <div class="qc-sheet" style="text-align:center;">
+    <div class="qc-sheet-header"><h3>📱 Scan to send a file</h3><button data-close-overlay="qrOverlay">✕</button></div>
+    <div id="qrCodeWrap" style="display:flex;justify-content:center;margin:10px 0;"></div>
+    <div id="qrCodeTimer" style="font-size:13px;opacity:.8;margin-bottom:6px;"></div>
+    <div id="qrCodeStatus" style="font-size:14px;min-height:20px;"></div>
+    <div class="hint-text" style="margin-top:8px;">
+      Scan with your phone's camera to send an image or document straight into this chat — no need to log in on that device. The code expires in 100 seconds and works for one file.
+    </div>
+    <button class="settings-btn" style="width:100%;margin-top:12px;" id="qrRegenBtn">Get a new code</button>
+  </div>
+</div>
+
+<!-- QR "scan to join" -->
+<div class="qc-overlay" id="joinQrOverlay">
+  <div class="qc-sheet" style="text-align:center;">
+    <div class="qc-sheet-header"><h3>🔗 Invite via QR</h3><button data-close-overlay="joinQrOverlay">✕</button></div>
+    <div id="joinQrCodeWrap" style="display:flex;justify-content:center;margin:10px 0;"></div>
+    <div id="joinQrCodeTimer" style="font-size:13px;opacity:.8;margin-bottom:6px;"></div>
+    <div id="joinQrCodeStatus" style="font-size:14px;min-height:20px;"></div>
+    <div class="hint-text" style="margin-top:8px;">
+      Anyone who scans this can join the room with just a name — no PIN needed. Valid for 30 minutes; everyone who joins this way is automatically signed out when it expires.
+    </div>
+    <button class="settings-btn" style="width:100%;margin-top:12px;" id="joinQrRegenBtn">Get a new code</button>
+  </div>
+</div>
+
+<!-- Image preview confirm -->
+<div class="qc-overlay" id="imgPreviewOverlay">
+  <div class="qc-sheet">
+    <div class="qc-sheet-header"><h3>Send this photo?</h3><button data-close-overlay="imgPreviewOverlay">✕</button></div>
+    <img class="img-preview-thumb" id="imgPreviewThumb" />
+    <div class="settings-row">
+      <button class="settings-btn" id="imgPreviewCancelBtn">Cancel</button>
+      <button class="settings-btn primary" id="imgPreviewSendBtn">Send</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div id="toastArea" class="toast-area"></div>
+  <div class="page" id="page-chat">
+    <div class="chat-header glass">
+      <div class="titles">
+        <div class="room-title" id="roomTitleEl">Room</div>
+        <div class="room-sub" id="roomSubEl"><span class="conn-dot" id="connDot"></span>connecting…</div>
+      </div>
+      <div class="crown" id="roleIconEl"></div>
+      <a class="hamburger" href="#" data-menu-open aria-label="Open menu">☰</a>
+    </div>
+
+    <div class="pinned glass" id="pinnedBar" style="display:none"></div>
+    <div id="mutedBanner"></div>
+    <div id="encKeyBar">
+      <input id="encKeyInput" type="password" placeholder="Room encryption key" />
+      <button id="encKeyUnlockBtn">Unlock</button>
+      <div class="hint-text" id="encKeyStatus" style="width:100%;margin-top:4px;"></div>
+    </div>
+
+    <div class="messages" id="messagesEl"></div>
+    <button class="jump-unread" id="jumpUnreadBtn">↓ Jump to first unread</button>
+
+    <div class="typing-line" id="typingLine"></div>
+
+    <div id="replyPreview" style="display:none"></div>
+
+    <div class="composer-toolbar">
+      <button id="pollToolBtn" title="Poll">📊</button>
+      <button id="stickerToolBtn" title="Sticker">🎟️</button>
+      <button id="gifToolBtn" title="GIF">🎬</button>
+      <button id="voiceToolBtn" title="Voice message">🎤</button>
+      <button id="qrToolBtn" title="Send via QR code">🔳</button>
+    </div>
+    <div class="input-bar glass">
+      <div class="attach" id="attachBtn">📎</div>
+      <input type="file" id="fileInput" style="display:none" />
+      <div class="attach" id="codeBtn" title="Insert code block">💻</div>
+      <textarea class="fake-input" id="textInput" placeholder="Type a message, or /help for commands…" rows="1" style="resize:none;border:none;outline:none;font-family:inherit;"></textarea>
+      <button class="send-btn" id="sendBtn">Send</button>
+    </div>
+
+    <div class="badge-note">QUICKCHAT GLASS v41 · LIVE ROOM</div>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script src="qrgen.js"></script>
+<script>
+const session = requireSession('login.html');
+</script>
+<script>
+if (session) {
+(function () {
+  let room = session.room, token = session.token, me = session.user, role = session.role;
+  let lastId = 0, renderedIds = new Set(), messageElements = new Map();
+  let roomEncEnabled = false, roomEncSalt = null, roomEncKey = null, encPromptShown = false;
+  let roomGlowColor = '';
+  let selfMsgAnimation = ''; // super user's own personal per-message animation choice
+  let forcedMsgAnimation = ''; // room-wide, set by a super via theme.php forceMsgAnimation
+  let isPremiumRoom = false, premiumPerks = [];
+  let replyingTo = null;
+  let pollTimer = null, typingTimer = null;
+  let lastReadSent = 0;
+  let myLastReadIdOnLoad = 0, unreadJumpTargetId = 0, hasJumpedUnread = false;
+  let pendingImageFile = null;
+  let mediaRecorder = null, recordedChunks = [], isRecording = false;
+  let stickerCatalogCache = null;
+
+  document.getElementById('roomTitleEl').textContent = room;
+  document.getElementById('roleIconEl').textContent = role === 'super' ? '👑' : role === 'host' ? '🛡️' : '';
+
+  function updateInviteQrVisibility() {
+    const show = role === 'super' || role === 'host' || !!window.__isCoHost;
+    document.getElementById('inviteQrSection').style.display = show ? '' : 'none';
+  }
+  updateInviteQrVisibility();
+
+  const messagesEl = document.getElementById('messagesEl');
+  const encKeyBar = document.getElementById('encKeyBar');
+  const mutedBanner = document.getElementById('mutedBanner');
+  const pinnedBar = document.getElementById('pinnedBar');
+
+  document.getElementById('leaveLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    clearSession();
+    window.location.href = 'login.html';
+  });
+
+  // ---------------- Overlays ----------------
+  function openOverlay(id) { document.getElementById(id).classList.add('open'); }
+  function closeOverlay(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-close-overlay]').forEach(btn => {
+    btn.addEventListener('click', () => closeOverlay(btn.dataset.closeOverlay));
+  });
+  document.querySelectorAll('.qc-overlay').forEach(ov => {
+    ov.addEventListener('click', (e) => { if (e.target === ov) ov.classList.remove('open'); });
+  });
+
+  // ---------------- Preferences (drawer) ----------------
+  (function initPrefs() {
+    const p = getPrefs();
+    document.getElementById('prefDesktopNotif').checked = !!p.desktopNotif;
+    document.getElementById('prefNotifSound').checked = !!p.notifSound;
+    document.getElementById('prefCompact').checked = !!p.compact;
+    document.getElementById('prefReduceMotion').checked = !!p.reduceMotion;
+    document.getElementById('prefLiteMode').checked = !!p.liteMode;
+    // Defaults to ON (undefined -> true) so a first-time visitor gets
+    // automatic code-block detection without having to find the toggle
+    // first — matches the "automatically on" behavior requested.
+    document.getElementById('prefAutoCode').checked = p.autoCode !== false;
+    applyPrefs();
+  })();
+  document.getElementById('prefDesktopNotif').addEventListener('change', async (e) => {
+    if (e.target.checked) {
+      const granted = await requestDesktopNotifPermission();
+      if (!granted) { e.target.checked = false; showToast('Notifications permission was not granted.', 'error'); return; }
+    }
+    setPrefs(Object.assign(getPrefs(), { desktopNotif: e.target.checked }));
+  });
+  document.getElementById('prefNotifSound').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { notifSound: e.target.checked })));
+  document.getElementById('prefCompact').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { compact: e.target.checked })));
+  document.getElementById('prefReduceMotion').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { reduceMotion: e.target.checked })));
+  document.getElementById('prefLiteMode').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { liteMode: e.target.checked })));
+  document.getElementById('prefAutoCode').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { autoCode: e.target.checked })));
+
+  // ---------------- Theme accordion: "apply to everyone" (super only) ----------------
+  // Every theme — including the super-exclusive ones (Golden Glass,
+  // Platinum, Obsidian) — now lives in the one theme accordion list.
+  // Unchecked, clicking any button only changes the super user's own
+  // personal theme (handled by glass-theme.js, same as for everyone
+  // else). Checked, it calls theme.php's forcePalette, which every
+  // client in the room reads on their next poll via applyRoomTheme()
+  // and applies for everyone, overriding their own personal choice
+  // until a super user lifts it.
+  if (role === 'super') {
+    document.querySelectorAll('.super-exclusive-theme').forEach(btn => { btn.hidden = false; });
+    document.getElementById('applyThemeAllRow').hidden = false;
+    document.getElementById('themeAdvancedSection').hidden = false;
+
+    document.querySelectorAll('.theme-switch button[data-theme]').forEach(btn => {
+      btn.addEventListener('click', async (e) => {
+        const applyAll = document.getElementById('applyThemeAllCheckbox').checked;
+        if (!applyAll) return; // personal-only path already handled by glass-theme.js's own listener
+        e.stopImmediatePropagation();
+        const { res, data } = await apiPost(API.theme, { token, forcePalette: btn.dataset.theme });
+        if (res.ok && data.ok) { showToast('Theme applied to everyone.', 'success'); document.body.setAttribute('data-theme', btn.dataset.theme); document.body.classList.add('theme-forced'); }
+        else showToast((data.message || data.error || 'Failed.'), 'error');
+      }, true); // capture phase, so this can stopImmediatePropagation before glass-theme.js's own click handler runs
+    });
+
+    // Advanced: full custom colours (no preset whitelist) — theme.php
+    // already accepts any CSS colour for background/glowColor from a
+    // full super (the preset-only restriction there applies to
+    // co-supers, not this). This just surfaces that existing backend
+    // capability in the theme accordion instead of settings.html only.
+    document.getElementById('advApplyBtn').addEventListener('click', async () => {
+      const glow = document.getElementById('advGlowColorInput').value;
+      const bg = document.getElementById('advBgColorInput').value;
+      const { res, data } = await apiPost(API.theme, { token, glowColor: glow, background: bg });
+      if (res.ok && data.ok) showToast('Custom colours applied to the room.', 'success');
+      else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+    document.getElementById('advResetBtn').addEventListener('click', async () => {
+      const { res, data } = await apiPost(API.theme, { token, glowColor: '', background: '' });
+      if (res.ok && data.ok) showToast('Custom colours cleared.', 'success');
+      else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+  }
+
+  // ---------------- Super Controls: message animation ----------------
+  if (role === 'super') {
+    document.getElementById('superThemeSection').style.display = '';
+    document.getElementById('superMsgAnimSelect').addEventListener('change', async (e) => {
+      const anim = e.target.value;
+      const applyAll = document.getElementById('applyAnimAllCheckbox').checked;
+      selfMsgAnimation = anim; // always applies to the super user's own sent messages
+      if (!applyAll) return;
+      const { res, data } = await apiPost(API.theme, { token, forceMsgAnimation: anim });
+      if (res.ok && data.ok) showToast(anim ? 'Animation applied to everyone.' : 'Animation cleared for everyone.', 'success');
+      else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+  }
+
+  // ---------------- View mode: Auto / Desktop / Mobile ----------------
+  // "Auto" (default) applies neither class, so the phone shell just uses
+  // its normal fixed max-width — there's no real screen-width-driven
+  // desktop layout to switch to here (this is a single fixed-width phone
+  // shell, not a responsive multi-column app), so Auto simply means
+  // "don't override anything." Desktop/Mobile force the wider or the
+  // normal-width shell regardless of actual window size.
+  function applyViewMode() {
+    const stored = localStorage.getItem('qc_view_mode') || 'auto';
+    document.body.classList.toggle('desktop-view', stored === 'desktop');
+    document.body.classList.toggle('mobile-view', stored === 'mobile');
+  }
+  document.querySelectorAll('.view-opt').forEach(btn => {
+    if (btn.dataset.view === (localStorage.getItem('qc_view_mode') || 'auto')) {
+      document.querySelectorAll('.view-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-opt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      localStorage.setItem('qc_view_mode', btn.dataset.view);
+      applyViewMode();
+    });
+  });
+  applyViewMode();
+
+  // ---------------- Clear my messages ----------------
+  document.getElementById('clearMineLink').addEventListener('click', async (e) => {
+    e.preventDefault();
+    if (!confirm('Remove all of your own messages in this room?')) return;
+    const { res, data } = await apiPost(API.clearMine, { token });
+    if (res.ok && data.ok) { showToast(`Removed ${data.removed || 0} message(s).`, 'success'); fetchAll(); }
+    else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  // ---------------- Encryption ----------------
+  async function syncEncryption(encEnabled, encSalt, superRecoveredKey) {
+    roomEncEnabled = !!encEnabled;
+    roomEncSalt = encSalt || null;
+    if (!roomEncEnabled) { roomEncKey = null; encKeyBar.classList.remove('show'); return; }
+
+    if (!roomEncKey && superRecoveredKey) {
+      try { roomEncKey = await deriveRoomKey(superRecoveredKey, roomEncSalt); cacheRoomPassphrase(room, superRecoveredKey); encPromptShown = true; } catch (e) {}
+    }
+    if (!roomEncKey) {
+      const cached = getCachedRoomPassphrase(room);
+      if (cached) { try { roomEncKey = await deriveRoomKey(cached, roomEncSalt); } catch (e) {} }
+    }
+    if (!roomEncKey && !encPromptShown) { encPromptShown = true; encKeyBar.classList.add('show'); updateEncLockUI(); }
+    if (roomEncKey) encKeyBar.classList.remove('show');
+  }
+  // ---------------- Encryption rules: verify + limit wrong-key attempts ----------------
+  // This is genuine client-side end-to-end encryption — the server never
+  // sees the passphrase or the derived key, only ciphertext — so there is
+  // no server-enforced rate limit possible on guessing it (a wrong guess
+  // never even reaches the network). What we CAN and do enforce, entirely
+  // client-side: verify the typed passphrase against a real encrypted
+  // message before accepting it (AES-GCM's built-in auth tag makes a
+  // wrong key fail to decrypt rather than silently producing garbage),
+  // and after 5 wrong guesses in this browser, lock further attempts out
+  // for 5 minutes. This is a friction/deterrent measure against casual
+  // guessing, not a cryptographic guarantee — someone could still clear
+  // storage and retry immediately. True brute-force resistance here comes
+  // from the passphrase strength and PBKDF2's 100,000 iterations, same as
+  // before this change.
+  const ENC_MAX_ATTEMPTS = 5;
+  const ENC_LOCKOUT_MS = 5 * 60 * 1000;
+  function encAttemptsKey() { return 'qc_enc_attempts_' + room; }
+  function getEncAttempts() {
+    try { return Object.assign({ count: 0, lockedUntil: 0 }, JSON.parse(sessionStorage.getItem(encAttemptsKey()))); }
+    catch (e) { return { count: 0, lockedUntil: 0 }; }
+  }
+  function setEncAttempts(a) { sessionStorage.setItem(encAttemptsKey(), JSON.stringify(a)); }
+  function updateEncLockUI() {
+    const a = getEncAttempts();
+    const btn = document.getElementById('encKeyUnlockBtn');
+    const input = document.getElementById('encKeyInput');
+    const statusEl = document.getElementById('encKeyStatus');
+    const now = Date.now();
+    if (a.lockedUntil > now) {
+      btn.disabled = true; input.disabled = true;
+      statusEl.textContent = 'Too many attempts — try again in ' + formatMmSs(Math.ceil((a.lockedUntil - now) / 1000)) + '.';
+      setTimeout(updateEncLockUI, 1000);
+    } else {
+      btn.disabled = false; input.disabled = false;
+      statusEl.textContent = a.count > 0 ? (ENC_MAX_ATTEMPTS - a.count) + ' attempt(s) remaining before a 5-minute lockout.' : '';
+    }
+  }
+  updateEncLockUI();
+
+  document.getElementById('encKeyUnlockBtn').addEventListener('click', async () => {
+    if (getEncAttempts().lockedUntil > Date.now()) return;
+    const val = document.getElementById('encKeyInput').value;
+    if (!val) return;
+    try {
+      const candidateKey = await deriveRoomKey(val, roomEncSalt);
+      if (lastEncryptedEnvelope) {
+        const test = await decryptFromRoom(candidateKey, lastEncryptedEnvelope);
+        if (test === null) {
+          const a = getEncAttempts();
+          a.count += 1;
+          if (a.count >= ENC_MAX_ATTEMPTS) { a.lockedUntil = Date.now() + ENC_LOCKOUT_MS; a.count = 0; }
+          setEncAttempts(a);
+          updateEncLockUI();
+          showToast('Incorrect encryption key.', 'error');
+          return;
+        }
+      }
+      // Either it decrypted a real message correctly, or there's nothing
+      // encrypted in the room yet to check against — either way, accept it.
+      setEncAttempts({ count: 0, lockedUntil: 0 });
+      roomEncKey = candidateKey;
+      cacheRoomPassphrase(room, val);
+      encKeyBar.classList.remove('show');
+      document.getElementById('encKeyStatus').textContent = '';
+      renderAll();
+    } catch (e) { showToast('Could not use that key.', 'error'); }
+  });
+
+  // ---------------- Theme ----------------
+  let lastRoomTheme = null; // cached so toggling Lite Mode can re-apply instantly, without waiting for the next poll
+  function applyRoomTheme(theme) {
+    if (!theme) return;
+    lastRoomTheme = theme;
+    if (getPrefs().liteMode) {
+      // Lite Mode: ignore any custom wallpaper entirely and let the
+      // body.lite-mode CSS rule's flat theme colour show through.
+      document.body.style.background = '';
+      document.body.style.backgroundSize = '';
+      document.body.style.backgroundPosition = '';
+      document.body.style.backgroundAttachment = '';
+    } else {
+      document.body.style.background = theme.background || '';
+      if (theme.background) { document.body.style.backgroundSize = 'cover'; document.body.style.backgroundPosition = 'center'; document.body.style.backgroundAttachment = 'fixed'; }
+    }
+    roomGlowColor = theme.glowColor || '';
+    document.querySelectorAll('.msg-row.super .msg-bubble').forEach(applyGlow);
+
+    // forcePalette — a super user can force the room's base data-theme
+    // for EVERYONE (including "golden", a super-exclusive palette not
+    // in the normal 4-option switcher). Empty string means "no forced
+    // palette", so each person's own personal choice (glass-theme.js,
+    // localStorage) applies as normal.
+    const forced = theme.forcePalette || '';
+    if (forced) {
+      document.body.setAttribute('data-theme', forced);
+      document.body.classList.toggle('theme-forced', true);
+      if (window.QCSyncThemeChip) window.QCSyncThemeChip(forced);
+    } else if (document.body.classList.contains('theme-forced')) {
+      // Forced palette was lifted — fall back to the person's own saved
+      // preference instead of staying stuck on whatever was forced.
+      document.body.classList.remove('theme-forced');
+      const saved = localStorage.getItem('glass_preview_theme') || 'nocturne';
+      document.body.setAttribute('data-theme', saved);
+      if (window.QCSyncThemeChip) window.QCSyncThemeChip(saved);
+    }
+
+    forcedMsgAnimation = theme.forceMsgAnimation || '';
+  }
+  window.QCOnPrefsChanged = function () { if (lastRoomTheme) applyRoomTheme(lastRoomTheme); };
+  function applyGlow(el) {
+    if (roomGlowColor) {
+      // Solid sweep of the chosen color, with a brighter highlight point
+      // so the ring still visibly rotates instead of looking static.
+      // This is what --glow-color-gradient (read by the CSS rule in
+      // glass-theme.css) actually renders — setting --glow-color alone
+      // was the bug: nothing in the CSS ever read that variable.
+      el.style.setProperty('--glow-color', roomGlowColor);
+      el.style.setProperty('--glow-color-gradient', `conic-gradient(from 0deg, ${roomGlowColor}, #fff8, ${roomGlowColor}, ${roomGlowColor})`);
+    } else {
+      el.style.removeProperty('--glow-color');
+      el.style.removeProperty('--glow-color-gradient');
+    }
+    // goldenGlow perk: every message bubble gets the animated glow, not
+    // just super-role ones — applied via a class so it can layer with the
+    // regular super glow without fighting over the same CSS variable.
+    if (isPremiumRoom && premiumPerks.includes('goldenGlow')) el.classList.add('premium-glow');
+  }
+
+  // ---------------- Premium room perks ----------------
+  // Applies the room-wide, one-time-per-load visual perks (badge, header
+  // accent). Per-message perks (goldenGlow, rainbowNames) are applied
+  // inside appendMessage/applyGlow instead, since they need to run on
+  // every new message, not just once at load.
+  function applyPremiumState(premium, perks) {
+    isPremiumRoom = !!premium;
+    premiumPerks = perks || [];
+    document.body.classList.toggle('premium-room', isPremiumRoom);
+
+    const existingBadge = document.getElementById('vipBadgeEl');
+    if (isPremiumRoom && premiumPerks.includes('vipBadge')) {
+      if (!existingBadge) {
+        const badge = document.createElement('span');
+        badge.id = 'vipBadgeEl';
+        badge.className = 'vip-badge';
+        badge.textContent = '✨ VIP ROOM';
+        const titleEl = document.getElementById('roomTitleEl');
+        if (titleEl && titleEl.parentNode) titleEl.parentNode.insertBefore(badge, titleEl.nextSibling);
+      }
+    } else if (existingBadge) {
+      existingBadge.remove();
+    }
+  }
+
+  // confetti perk: a short burst of falling emoji/shapes, triggered on
+  // every new message (not just yours) so the whole room feels festive.
+  // Pure CSS-driven, removes itself after the animation ends — nothing
+  // persists in the DOM or needs cleanup elsewhere.
+  function fireConfetti() {
+    if (!isPremiumRoom || !premiumPerks.includes('confetti')) return;
+    const colors = ['#ffd700', '#ff6b9d', '#6bcbff', '#7fe08a', '#c77dff'];
+    const layer = document.createElement('div');
+    layer.className = 'confetti-layer';
+    for (let i = 0; i < 18; i++) {
+      const piece = document.createElement('span');
+      piece.className = 'confetti-piece';
+      piece.style.left = Math.random() * 100 + '%';
+      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+      piece.style.animationDelay = (Math.random() * 0.3) + 's';
+      piece.style.animationDuration = (1.4 + Math.random() * 0.8) + 's';
+      layer.appendChild(piece);
+    }
+    document.body.appendChild(layer);
+    setTimeout(() => layer.remove(), 2400);
+  }
+
+  // ---------------- @mentions ----------------
+  function linkifyMentions(text) {
+    const frag = document.createDocumentFragment();
+    const re = /(^|[\s.,!?():])@([a-zA-Z0-9_\-]{2,32})/g;
+    let lastIndex = 0, m;
+    while ((m = re.exec(text)) !== null) {
+      const start = m.index + m[1].length;
+      if (start > lastIndex) frag.appendChild(document.createTextNode(text.slice(lastIndex, start)));
+      const span = document.createElement('span');
+      span.className = 'mention';
+      span.textContent = '@' + m[2];
+      frag.appendChild(span);
+      lastIndex = start + 1 + m[2].length;
+    }
+    frag.appendChild(document.createTextNode(text.slice(lastIndex)));
+    return frag;
+  }
+  function mentionsMe(text) {
+    if (!text) return false;
+    const re = new RegExp('(^|[\\s.,!?():])@' + me.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '(?![a-zA-Z0-9_\\-])', 'i');
+    return re.test(text);
+  }
+
+  // ---------------- Copy to clipboard ----------------
+  function copyToClipboard(text, btnEl) {
+    const done = () => {
+      if (!btnEl) return;
+      const original = btnEl.textContent;
+      btnEl.textContent = '✓ Copied';
+      btnEl.classList.add('copied');
+      setTimeout(() => { btnEl.textContent = original; btnEl.classList.remove('copied'); }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(() => fallbackCopy(text, done));
+    } else {
+      fallbackCopy(text, done);
+    }
+  }
+  function fallbackCopy(text, done) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) { showToast('Could not copy — please select and copy manually.', 'error'); }
+    document.body.removeChild(ta);
+  }
+
+  // ---------------- Code blocks ----------------
+  // Detects fenced code blocks (```like this```, the standard markdown
+  // convention). When the "Auto-detect code blocks" preference is on
+  // (default), a message with NO fences but more than one line is also
+  // treated as code automatically — matching the request that multi-line
+  // messages become a code box without needing the fence button. Fenced
+  // blocks always take priority and are parsed out individually even
+  // when mixed with plain text; the auto-multiline path only applies to
+  // a message with zero fences.
+  const CODE_FENCE_RE = /```([\s\S]*?)```/g;
+  function autoCodeEnabled() { return getPrefs().autoCode !== false; }
+  function hasCodeFence(text) {
+    CODE_FENCE_RE.lastIndex = 0;
+    if (CODE_FENCE_RE.test(text || '')) return true;
+    if (autoCodeEnabled() && text && text.indexOf('\n') !== -1) return true;
+    return false;
+  }
+  function buildTextWithCodeBlocks(text) {
+    CODE_FENCE_RE.lastIndex = 0;
+    if (!CODE_FENCE_RE.test(text || '')) {
+      // No explicit fences — this path only runs when hasCodeFence()
+      // returned true via the auto-multiline rule above, so wrap the
+      // whole message as a single code block.
+      const frag = document.createDocumentFragment();
+      frag.appendChild(buildCodeBlockEl(text));
+      return frag;
+    }
+    const frag = document.createDocumentFragment();
+    CODE_FENCE_RE.lastIndex = 0;
+    let lastIndex = 0, m;
+    while ((m = CODE_FENCE_RE.exec(text)) !== null) {
+      if (m.index > lastIndex) {
+        const plain = document.createElement('div');
+        plain.style.whiteSpace = 'pre-wrap';
+        plain.appendChild(linkifyMentions(text.slice(lastIndex, m.index)));
+        frag.appendChild(plain);
+      }
+      const codeText = m[1].replace(/^\n/, '').replace(/\n$/, '');
+      frag.appendChild(buildCodeBlockEl(codeText));
+      lastIndex = CODE_FENCE_RE.lastIndex;
+    }
+    if (lastIndex < text.length) {
+      const plain = document.createElement('div');
+      plain.style.whiteSpace = 'pre-wrap';
+      plain.appendChild(linkifyMentions(text.slice(lastIndex)));
+      frag.appendChild(plain);
+    }
+    return frag;
+  }
+
+  // Builds one collapsed code-block preview element (used both for each
+  // fenced block found in a message, and for the whole-message
+  // auto-multiline case). Tap opens the full line-numbered popup; tap
+  // again, tap outside, Close, or Escape dismisses it (see
+  // renderCodeViewerModal). Copy and Download buttons stop propagation
+  // so tapping them doesn't also trigger the open-popup handler.
+  function buildCodeBlockEl(codeText) {
+    const block = document.createElement('div');
+    block.className = 'code-block';
+    block.title = 'Tap to view with line numbers';
+    const previewLines = codeText.split('\n').slice(0, 4).join('\n');
+    const pre = document.createElement('pre');
+    const code = document.createElement('code');
+    code.textContent = previewLines + (codeText.split('\n').length > 4 ? '\n…' : '');
+    pre.appendChild(code);
+    const copyBtn = document.createElement('button');
+    copyBtn.className = 'code-copy-btn';
+    copyBtn.textContent = '📋 Copy';
+    copyBtn.addEventListener('click', (e) => { e.stopPropagation(); copyToClipboard(codeText, copyBtn); });
+    const dlBtn = document.createElement('button');
+    dlBtn.className = 'code-copy-btn code-dl-btn';
+    dlBtn.textContent = '⬇️';
+    dlBtn.title = 'Download as .txt';
+    dlBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const blob = new Blob([codeText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'code.txt';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    });
+    block.appendChild(pre);
+    block.appendChild(copyBtn);
+    block.appendChild(dlBtn);
+    block.addEventListener('click', (e) => {
+      if (e.target === copyBtn || e.target === dlBtn) return;
+      openCodeViewerText(codeText, 'Code');
+    });
+    return block;
+  }
+
+  // ---------------- Line-numbered code/text viewer popup ----------------
+  // Shared by: fenced code blocks in messages (openCodeViewerText, text
+  // already in hand) and uploaded code/text files (openCodeViewerUrl,
+  // fetches the content first). Tap the backdrop, tap Close, or press
+  // Escape to dismiss; nothing happens on a tap that lands on the modal
+  // itself (so selecting text inside doesn't accidentally close it).
+  function renderCodeViewerModal(filename, downloadUrl) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'code-modal-backdrop';
+    const modal = document.createElement('div');
+    modal.className = 'code-modal';
+    const header = document.createElement('div');
+    header.className = 'code-modal-header';
+    const fname = document.createElement('div');
+    fname.className = 'fname';
+    fname.textContent = filename;
+    const copyBtn = document.createElement('button');
+    copyBtn.textContent = 'Copy';
+    header.appendChild(fname);
+    header.appendChild(copyBtn);
+    if (downloadUrl) {
+      const dlBtn = document.createElement('a');
+      dlBtn.textContent = '⬇️';
+      dlBtn.title = 'Download';
+      dlBtn.href = downloadUrl;
+      header.appendChild(dlBtn);
+    }
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = 'Close';
+    header.appendChild(closeBtn);
+    const body = document.createElement('div');
+    body.className = 'code-modal-body';
+    modal.appendChild(header);
+    modal.appendChild(body);
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+    // Same background-scroll guard as the mini IDE below — belt-and-
+    // braces against mobile browsers still scrolling the page behind a
+    // fixed-position modal once a scrollable region is involved.
+    const prevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const close = () => { backdrop.remove(); document.body.style.overflow = prevBodyOverflow; document.removeEventListener('keydown', onEsc); };
+    const onEsc = (e) => { if (e.key === 'Escape') close(); };
+    closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    document.addEventListener('keydown', onEsc);
+
+    return { backdrop, header, body, copyBtn, close };
+  }
+
+  // ---------------- Mini code IDE + "open in Code Box" ----------------
+  // Two escalating options on top of the plain read-only code viewer
+  // above: "Expand" opens a small editable IDE right here in the chat
+  // (CodeMirror, language select, autosuggest, save-to-device, search
+  // the snippet on Google) without leaving the page; "Code Box" hands
+  // the same code off to the full separate Code Box app (codebox/) as
+  // a new project, opened in a new tab, for when someone wants the
+  // real multi-file IDE + AI assistant instead of a quick edit.
+  function addMiniIdeButtons(header, getCodeFn, filename) {
+    const expandBtn = document.createElement('button');
+    expandBtn.textContent = '⤢ Expand';
+    expandBtn.title = 'Open as a mini code editor';
+    expandBtn.addEventListener('click', () => openMiniIde(getCodeFn(), filename));
+    const cbBtn = document.createElement('button');
+    cbBtn.textContent = '🧩 Code Box';
+    cbBtn.title = 'Open in the full Code Box IDE (new tab)';
+    cbBtn.addEventListener('click', () => openInCodeBox(getCodeFn(), filename));
+    const closeBtn = header.lastElementChild; // always the Close button — see renderCodeViewerModal
+    header.insertBefore(expandBtn, closeBtn);
+    header.insertBefore(cbBtn, closeBtn);
+  }
+
+  // Best-effort language guess from the code's content alone — chat code
+  // fences don't carry a ```lang tag today, so this is what pre-selects
+  // a sensible default in the mini IDE / Code Box's language dropdown
+  // instead of always landing on Plain Text. The person can always
+  // change it themselves; this only saves a click in the common case.
+  const MINI_IDE_LANGS = [
+    { id: 'plaintext', label: 'Plain Text', mode: 'text/plain', ext: 'txt' },
+    { id: 'javascript', label: 'JavaScript', mode: 'javascript', ext: 'js' },
+    { id: 'python', label: 'Python', mode: 'python', ext: 'py' },
+    { id: 'php', label: 'PHP', mode: 'application/x-httpd-php', ext: 'php' },
+    { id: 'c', label: 'C', mode: 'text/x-csrc', ext: 'c' },
+    { id: 'cpp', label: 'C++', mode: 'text/x-c++src', ext: 'cpp' },
+    { id: 'html', label: 'HTML', mode: 'htmlmixed', ext: 'html' },
+    { id: 'css', label: 'CSS', mode: 'css', ext: 'css' },
+    { id: 'bash', label: 'Bash', mode: 'shell', ext: 'sh' },
+    { id: 'markdown', label: 'Markdown', mode: 'markdown', ext: 'md' },
+  ];
+  const LANG_GUESS_RULES = [
+    { re: /^\s*<\?php/, lang: 'php' },
+    { re: /^\s*#!.*\bpython/, lang: 'python' },
+    { re: /\bdef\s+\w+\s*\([^)]*\)\s*:/, lang: 'python' },
+    { re: /^\s*#include\s*[<"]/, lang: 'cpp' },
+    { re: /^\s*<!DOCTYPE html>|<html[\s>]/i, lang: 'html' },
+    { re: /^\s*#!.*\b(bash|sh)\b/, lang: 'bash' },
+    { re: /^\s*[.#]?[\w-]+\s*\{[^}]*:[^}]*;/, lang: 'css' },
+    { re: /\bfunction\s+\w+\s*\(|=>\s*\{|\bconsole\.log\(|\bconst\s+\w+\s*=/, lang: 'javascript' },
+  ];
+  function guessLanguage(code) {
+    for (const rule of LANG_GUESS_RULES) if (rule.re.test(code || '')) return rule.lang;
+    return 'plaintext';
+  }
+  function langInfoFor(id) { return MINI_IDE_LANGS.find(l => l.id === id) || MINI_IDE_LANGS[0]; }
+
+  // Lazy-loads CodeMirror 5 from the same CDN version the full Code Box
+  // app uses (only once — subsequent calls resolve immediately) so
+  // nobody pays for this until they actually open the mini IDE.
+  let cmLoadPromise = null;
+  function ensureCodeMirror() {
+    if (window.CodeMirror) return Promise.resolve();
+    if (cmLoadPromise) return cmLoadPromise;
+    const CM_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/';
+    function loadCss(href) { return new Promise((res) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.onload = res; l.onerror = res; document.head.appendChild(l); }); }
+    function loadJs(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+    cmLoadPromise = (async () => {
+      await loadCss(CM_BASE + 'codemirror.min.css');
+      await loadCss(CM_BASE + 'addon/hint/show-hint.min.css');
+      await loadJs(CM_BASE + 'codemirror.min.js');
+      // Some of these modes/addons depend on others being *registered*
+      // first (not just finished downloading) — CodeMirror's php mode
+      // extends htmlmixed+clike, and htmlmixed itself embeds xml+
+      // javascript+css. Loading everything in one Promise.all gave no
+      // guarantee those would finish executing in the right order, so
+      // php/html highlighting would silently fail to register depending
+      // on network timing. Loading in dependency phases fixes that.
+      await Promise.all([
+        loadJs(CM_BASE + 'mode/javascript/javascript.min.js'),
+        loadJs(CM_BASE + 'mode/python/python.min.js'),
+        loadJs(CM_BASE + 'mode/clike/clike.min.js'),
+        loadJs(CM_BASE + 'mode/xml/xml.min.js'),
+        loadJs(CM_BASE + 'mode/css/css.min.js'),
+        loadJs(CM_BASE + 'mode/shell/shell.min.js'),
+        loadJs(CM_BASE + 'mode/markdown/markdown.min.js'),
+        loadJs(CM_BASE + 'addon/edit/matchbrackets.min.js'),
+        loadJs(CM_BASE + 'addon/hint/show-hint.min.js'),
+        loadJs(CM_BASE + 'addon/hint/anyword-hint.min.js'),
+      ]);
+      await loadJs(CM_BASE + 'mode/htmlmixed/htmlmixed.min.js'); // needs xml+javascript+css above
+      await loadJs(CM_BASE + 'mode/php/php.min.js'); // needs clike+htmlmixed above
+      // Language-aware autocomplete (not just anyword's whole-document
+      // word list) for the modes that have a real hint addon in
+      // CodeMirror 5's standard set.
+      await Promise.all([
+        loadJs(CM_BASE + 'addon/hint/javascript-hint.min.js'),
+        loadJs(CM_BASE + 'addon/hint/xml-hint.min.js'),
+        loadJs(CM_BASE + 'addon/hint/css-hint.min.js'),
+      ]);
+      await loadJs(CM_BASE + 'addon/hint/html-hint.min.js'); // needs xml-hint+css-hint+javascript-hint above
+    })();
+    return cmLoadPromise;
+  }
+
+  async function openMiniIde(code, filename) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'code-modal-backdrop';
+    const modal = document.createElement('div');
+    modal.className = 'code-modal mini-ide-modal';
+
+    const header = document.createElement('div');
+    header.className = 'code-modal-header mini-ide-header';
+    const nameInput = document.createElement('input');
+    nameInput.className = 'mini-ide-filename';
+    nameInput.value = (filename && filename !== 'Code') ? filename : 'snippet.txt';
+    nameInput.spellcheck = false;
+    const langSelect = document.createElement('select');
+    langSelect.className = 'mini-ide-lang';
+    MINI_IDE_LANGS.forEach((l) => { const o = document.createElement('option'); o.value = l.id; o.textContent = l.label; langSelect.appendChild(o); });
+    langSelect.value = guessLanguage(code);
+    const saveBtn = document.createElement('button'); saveBtn.textContent = '💾 Save';
+    const searchBtn = document.createElement('button'); searchBtn.textContent = '🔍 Search';
+    const cbBtn = document.createElement('button'); cbBtn.textContent = '🧩 Code Box';
+    const closeBtn = document.createElement('button'); closeBtn.textContent = 'Close';
+    header.append(nameInput, langSelect, saveBtn, searchBtn, cbBtn, closeBtn);
+
+    const body = document.createElement('div');
+    body.className = 'mini-ide-body';
+    const ta = document.createElement('textarea');
+    ta.value = code;
+    body.appendChild(ta);
+
+    const hint = document.createElement('div');
+    hint.className = 'mini-ide-hint';
+    hint.textContent = 'Ctrl+Space for suggestions · Esc or tap outside to close';
+
+    modal.append(header, body, hint);
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+    // Belt-and-braces against the page scrolling behind a fixed-position
+    // modal on mobile (a well-known class of bug on iOS Safari in
+    // particular) — the modal itself is already position:fixed, but
+    // that alone doesn't always stop touch-scroll from reaching the
+    // page underneath once a nested scrollable region is involved.
+    const prevBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    let onResize = null;
+    const close = () => {
+      backdrop.remove();
+      document.body.style.overflow = prevBodyOverflow;
+      document.removeEventListener('keydown', onEsc);
+      if (onResize) window.removeEventListener('resize', onResize);
+    };
+    const onEsc = (e) => { if (e.key === 'Escape') close(); };
+    closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+    document.addEventListener('keydown', onEsc);
+
+    try {
+      await ensureCodeMirror();
+    } catch (e) {
+      body.textContent = '';
+      const note = document.createElement('div');
+      note.className = 'code-modal-note';
+      note.textContent = 'Could not load the code editor (check your connection). You can still Save or Search using the buttons above.';
+      body.appendChild(note);
+      saveBtn.addEventListener('click', () => downloadAsFile(ta.value, nameInput.value, langInfoFor(langSelect.value).ext));
+      searchBtn.addEventListener('click', () => searchCodeOnGoogle(ta.value));
+      cbBtn.addEventListener('click', () => openInCodeBox(ta.value, nameInput.value));
+      return;
+    }
+
+    const cm = CodeMirror.fromTextArea(ta, {
+      value: code,
+      mode: langInfoFor(langSelect.value).mode,
+      lineNumbers: true,
+      matchBrackets: true,
+      indentUnit: 2,
+      tabSize: 2,
+      // NOT viewportMargin: Infinity — that tells CodeMirror to render
+      // every line at once and grow to full content height, which
+      // fights the fixed-height container below and was the actual
+      // cause of the whole modal (header included) scrolling as one
+      // unit instead of just the code area scrolling internally.
+      // Leaving this at CodeMirror's default keeps it correctly
+      // viewport-virtualized and scrollable within its own box.
+      extraKeys: { 'Ctrl-Space': 'autocomplete' },
+    });
+    cm.setSize('100%', '100%');
+    // A single rAF can fire before layout has fully settled right after
+    // the modal and CDN-loaded editor both just landed in the DOM in
+    // the same tick — a follow-up refresh on the next tick catches that.
+    requestAnimationFrame(() => cm.refresh());
+    setTimeout(() => cm.refresh(), 60);
+
+    langSelect.addEventListener('change', () => cm.setOption('mode', langInfoFor(langSelect.value).mode));
+    onResize = () => cm.refresh();
+    window.addEventListener('resize', onResize);
+
+    saveBtn.addEventListener('click', () => downloadAsFile(cm.getValue(), nameInput.value, langInfoFor(langSelect.value).ext));
+    searchBtn.addEventListener('click', () => searchCodeOnGoogle(cm.getValue()));
+    cbBtn.addEventListener('click', () => openInCodeBox(cm.getValue(), nameInput.value));
+  }
+
+  function downloadAsFile(text, filename, fallbackExt) {
+    let fname = (filename || '').trim() || ('snippet.' + fallbackExt);
+    if (!/\.[a-zA-Z0-9]+$/.test(fname)) fname += '.' + fallbackExt;
+    const blob = new Blob([text], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    showToast('Saved ' + fname, 'success');
+  }
+
+  // Searches the code's most distinctive line (first non-blank line —
+  // usually a function signature, an import, or an error message if
+  // this snippet came from a stack trace) rather than the whole block,
+  // since a multi-line exact-ish query is far less likely to return
+  // anything useful.
+  function searchCodeOnGoogle(code) {
+    const line = (code || '').split('\n').map((l) => l.trim()).find((l) => l.length > 0) || '';
+    const query = line.slice(0, 200) || 'code';
+    window.open('https://www.google.com/search?q=' + encodeURIComponent(query), '_blank', 'noopener');
+  }
+
+  // Hands the code off to the full Code Box app as a fresh single-file
+  // project, then opens it in a new tab. Code Box reads its project
+  // token from a `p` URL param (see codebox/assets/app.js's cbToken()).
+  async function openInCodeBox(code, filename) {
+    showToast('Opening in Code Box…', 'info');
+    try {
+      const createRes = await fetch('codebox/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'create_project' }) });
+      const createData = await createRes.json();
+      if (!createData.ok) throw new Error(createData.error || 'create failed');
+      const lang = guessLanguage(code);
+      let fname = (filename || '').trim() || ('snippet.' + langInfoFor(lang).ext);
+      fname = fname.replace(/[^a-zA-Z0-9_.\-]/g, '_');
+      if (!/\.[a-zA-Z0-9]+$/.test(fname)) fname += '.' + langInfoFor(lang).ext;
+      const state = {
+        project: { name: 'chat-snippet', children: [{ name: fname, type: 'file', path: fname, content: code }] },
+        settings: {},
+        workspace: { openTabs: [fname], activeTab: fname, expanded: [''] },
+      };
+      const saveRes = await fetch('codebox/api.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'save_state', token: createData.token, state }) });
+      const saveData = await saveRes.json();
+      if (!saveData.ok) throw new Error(saveData.error || 'save failed');
+      window.open('codebox/index.php?p=' + encodeURIComponent(createData.token), '_blank', 'noopener');
+    } catch (e) {
+      showToast('Could not open Code Box — check your connection.', 'error');
+    }
+  }
+
+  function renderLineNumberedTable(text) {
+    const lines = text.split('\n');
+    const table = document.createElement('table');
+    lines.forEach((line, i) => {
+      const row = document.createElement('tr');
+      const lnCell = document.createElement('td'); lnCell.className = 'ln'; lnCell.textContent = String(i + 1);
+      const codeCell = document.createElement('td'); codeCell.className = 'code-line'; codeCell.textContent = line.length ? line : ' ';
+      row.appendChild(lnCell); row.appendChild(codeCell);
+      table.appendChild(row);
+    });
+    return table;
+  }
+
+  function openCodeViewerText(text, filename) {
+    const { header, body, copyBtn } = renderCodeViewerModal(filename || 'Code', null);
+    body.appendChild(renderLineNumberedTable(text));
+    copyBtn.addEventListener('click', () => copyToClipboard(text, copyBtn));
+    addMiniIdeButtons(header, () => text, filename || 'Code');
+  }
+
+  const CODE_VIEW_MAX_BYTES = 1.5 * 1024 * 1024; // beyond this, show a truncation note and rely on the download button for the rest
+  async function openCodeViewerUrl(url, filename, downloadUrl) {
+    const { header, body, copyBtn, close } = renderCodeViewerModal(filename, downloadUrl);
+    body.textContent = 'Loading…';
+    let fullText = '';
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('fetch failed');
+      const blob = await res.blob();
+      let displayBlob = blob, truncated = false;
+      if (blob.size > CODE_VIEW_MAX_BYTES) { displayBlob = blob.slice(0, CODE_VIEW_MAX_BYTES); truncated = true; }
+      fullText = await displayBlob.text();
+      body.textContent = '';
+      body.appendChild(renderLineNumberedTable(fullText));
+      if (truncated) {
+        const note = document.createElement('div');
+        note.className = 'code-modal-note';
+        note.textContent = `Showing the first ${formatSize(CODE_VIEW_MAX_BYTES)} of a larger file — download it to see the rest.`;
+        body.parentElement.appendChild(note);
+      }
+      addMiniIdeButtons(header, () => fullText, filename);
+    } catch (e) {
+      body.textContent = '';
+      const note = document.createElement('div');
+      note.className = 'code-modal-note';
+      note.textContent = 'Could not load this file.';
+      body.appendChild(note);
+    }
+    copyBtn.addEventListener('click', () => copyToClipboard(fullText, copyBtn));
+  }
+
+  // ---------------- Rendering ----------------
+  let lastEncryptedEnvelope = null; // a real sample ciphertext, used to actually verify a passphrase (see the encryption-rules section below) rather than just assuming whatever was typed is correct
+  async function decryptIfNeeded(text) {
+    if (!isEncryptedEnvelope(text)) return { plain: text, wasEncrypted: false, failed: false };
+    lastEncryptedEnvelope = text;
+    if (!roomEncKey) return { plain: null, wasEncrypted: true, failed: true };
+    const dec = await decryptFromRoom(roomEncKey, text);
+    return { plain: dec, wasEncrypted: true, failed: dec === null };
+  }
+
+  function fileDownloadUrl(m) {
+    return `${API.download}?token=${encodeURIComponent(token)}&room=${encodeURIComponent(room)}&path=${encodeURIComponent(m.fileUrl)}&name=${encodeURIComponent(m.fileName || '')}`;
+  }
+  function iconForFile(cat, ext) {
+    if (cat === 'file') {
+      if (['zip','rar','7z'].includes(ext)) return '🗜️';
+      if (ext === 'pdf') return '📕';
+      if (['doc','docx'].includes(ext)) return '📄';
+      if (['xls','xlsx','csv'].includes(ext)) return '📊';
+      return '📁';
+    }
+    return '📁';
+  }
+
+  function renderPollCard(m) {
+    const poll = (window.__polls || []).find(p => p.id === m.pollId);
+    const wrap = document.createElement('div');
+    wrap.className = 'poll-card';
+    if (!poll) { wrap.textContent = '📊 Poll unavailable.'; return wrap; }
+    const q = document.createElement('div'); q.className = 'poll-q'; q.textContent = '📊 ' + poll.question;
+    wrap.appendChild(q);
+    const totalVotes = Object.keys(poll.votes || {}).length;
+    const myVote = (poll.votes || {})[me.toLowerCase()];
+    poll.options.forEach(opt => {
+      const count = Object.values(poll.votes || {}).filter(v => v === opt.id).length;
+      const pct = totalVotes ? Math.round((count / totalVotes) * 100) : 0;
+      const row = document.createElement('div'); row.className = 'poll-opt';
+      row.innerHTML = `<div class="fill" style="width:${pct}%"></div><span>${opt.id === myVote ? '✅ ' : ''}${escapeHtml(opt.text)}</span><span class="pct">${count} · ${pct}%</span>`;
+      if (!poll.closed) {
+        row.addEventListener('click', async () => {
+          const { res, data } = await apiPost(API.poll, { token, action: 'vote', pollId: poll.id, optionId: opt.id });
+          if (res.ok && data.ok) { const idx = (window.__polls || []).findIndex(p => p.id === poll.id); if (idx >= 0) window.__polls[idx] = data.poll; refreshPollCards(); }
+          else showToast((data.message || data.error || 'Could not vote.'), 'error');
+        });
+      }
+      wrap.appendChild(row);
+    });
+    const meta = document.createElement('div'); meta.className = 'poll-meta';
+    meta.textContent = poll.closed ? 'Poll closed · ' + totalVotes + ' vote(s)' : totalVotes + ' vote(s) · by ' + poll.createdBy;
+    wrap.appendChild(meta);
+    if (!poll.closed && (role === 'super' || role === 'host' || window.__isCoHost || poll.createdBy === me)) {
+      const closeBtn = document.createElement('button'); closeBtn.className = 'poll-close-btn'; closeBtn.textContent = 'Close poll';
+      closeBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.poll, { token, action: 'close', pollId: poll.id });
+        if (res.ok && data.ok) { poll.closed = true; refreshPollCards(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      wrap.appendChild(closeBtn);
+    }
+    return wrap;
+  }
+  function refreshPollCards() {
+    document.querySelectorAll('.msg-row').forEach(row => {
+      const id = parseInt(row.dataset.msgId, 10);
+      const el = messageElements.get(id);
+      if (!el) return;
+      const pc = el.querySelector('.poll-card');
+      if (pc) { const parent = pc.parentNode; parent.replaceChild(renderPollCard({ pollId: pc.dataset.pollId }), pc); }
+    });
+  }
+
+  async function buildBubbleContent(m, plainText) {
+    const frag = document.createDocumentFragment();
+    if (m.replyTo) {
+      const quote = document.createElement('div');
+      quote.style.cssText = 'border-left:2px solid var(--accent);padding:3px 8px;margin-bottom:5px;font-size:11px;opacity:0.75;';
+      let rtext = m.replyTo.text || '';
+      if (isEncryptedEnvelope(rtext)) { const d = await decryptIfNeeded(rtext); rtext = d.failed ? '🔒 encrypted' : d.plain; }
+      quote.innerHTML = `<b>${escapeHtml(m.replyTo.user === me ? 'You' : m.replyTo.user)}</b><br>${escapeHtml((rtext || '').slice(0, 80))}`;
+      frag.appendChild(quote);
+    }
+
+    if (m.type === 'poll') {
+      const card = renderPollCard(m);
+      card.dataset.pollId = m.pollId;
+      frag.appendChild(card);
+    } else if (m.type === 'sticker') {
+      const s = document.createElement('div'); s.className = 'msg-sticker'; s.textContent = m.stickerEmoji || '🙂';
+      frag.appendChild(s);
+    } else if (m.type === 'gif') {
+      const img = document.createElement('img'); img.className = 'msg-gif'; img.src = m.gifUrl;
+      frag.appendChild(img);
+    } else if (m.type === 'file') {
+      if (m.fileCategory === 'image') {
+        const img = document.createElement('img'); img.className = 'msg-image'; img.src = fileDownloadUrl(m);
+        img.addEventListener('click', () => window.open(fileDownloadUrl(m), '_blank'));
+        frag.appendChild(img);
+      } else if (m.fileCategory === 'audio') {
+        const a = document.createElement('audio'); a.className = 'msg-audio'; a.controls = true; a.src = fileDownloadUrl(m); frag.appendChild(a);
+        if (m.isVoiceMessage) { const lab = document.createElement('div'); lab.style.cssText = 'font-size:10px;opacity:0.6;margin-top:3px;'; lab.textContent = '🎤 voice message'; frag.appendChild(lab); }
+      } else if (m.fileCategory === 'video') {
+        const v = document.createElement('video'); v.className = 'msg-video'; v.controls = true; v.src = fileDownloadUrl(m); frag.appendChild(v);
+      } else if (m.fileCategory === 'code') {
+        // Uploaded .txt/.js/.py/.json/etc — server always serves these as
+        // text/plain (see safe_download_mime() in common.php), so this is
+        // just a fetch+display, never a live script execution risk.
+        const row = document.createElement('div'); row.className = 'file-chip-row';
+        const viewBtn = document.createElement('button'); viewBtn.type = 'button'; viewBtn.className = 'file-chip';
+        viewBtn.innerHTML = `<span class="fc-icon">📝</span><span><span class="fc-name">${escapeHtml(m.fileName||'file')}</span><br><span class="fc-size">${formatSize(m.fileSize)} · tap to view</span></span>`;
+        viewBtn.addEventListener('click', () => openCodeViewerUrl(fileDownloadUrl(m), m.fileName || 'file.txt', fileDownloadUrl(m) + '&download=1'));
+        const dlBtn = document.createElement('a'); dlBtn.className = 'file-dl-btn'; dlBtn.textContent = '⬇️'; dlBtn.title = 'Download';
+        dlBtn.href = fileDownloadUrl(m) + '&download=1';
+        row.appendChild(viewBtn); row.appendChild(dlBtn);
+        frag.appendChild(row);
+      } else {
+        const row = document.createElement('div'); row.className = 'file-chip-row';
+        const link = document.createElement('a'); link.className = 'file-chip'; link.href = fileDownloadUrl(m) + '&download=1'; link.target = '_blank';
+        link.innerHTML = `<span class="fc-icon">${iconForFile(m.fileCategory, m.fileExt)}</span><span><span class="fc-name">${escapeHtml(m.fileName||'file')}</span><br><span class="fc-size">${formatSize(m.fileSize)}</span></span>`;
+        const dlBtn = document.createElement('a'); dlBtn.className = 'file-dl-btn'; dlBtn.textContent = '⬇️'; dlBtn.title = 'Download';
+        dlBtn.href = fileDownloadUrl(m) + '&download=1';
+        row.appendChild(link); row.appendChild(dlBtn);
+        frag.appendChild(row);
+      }
+      if (plainText) { const cap = document.createElement('div'); cap.style.marginTop = '5px'; cap.textContent = plainText; frag.appendChild(cap); }
+    } else {
+      if (plainText === null) {
+        const lockDiv = document.createElement('div'); lockDiv.style.opacity = '0.7'; lockDiv.textContent = '🔒 Encrypted message — enter the room key to view';
+        frag.appendChild(lockDiv);
+      } else {
+        const textDiv = document.createElement('div');
+        textDiv.className = 'msg-text-scroll';
+        if (hasCodeFence(plainText)) {
+          textDiv.appendChild(buildTextWithCodeBlocks(plainText));
+        } else {
+          textDiv.style.whiteSpace = 'pre-wrap';
+          textDiv.appendChild(linkifyMentions(plainText));
+        }
+        frag.appendChild(textDiv);
+        // simple link-preview: first http(s) url in a plain (non-encrypted) message
+        if (!m._noPreview) {
+          const urlMatch = plainText.match(/https?:\/\/[^\s]+/);
+          if (urlMatch) loadLinkPreview(urlMatch[0], frag, m);
+        }
+      }
+    }
+    if (m.edited) { const tag = document.createElement('span'); tag.className = 'edited-tag'; tag.textContent = '(edited)'; frag.appendChild(tag); }
+    return frag;
+  }
+
+  async function loadLinkPreview(url, frag, m) {
+    try {
+      const { res, data } = await apiGet(`${API.linkPreview}?token=${encodeURIComponent(token)}&url=${encodeURIComponent(url)}`);
+      if (!res.ok || !data.ok || !data.preview) return; // null preview = fetch failed or was blocked (SSRF protection) — fine, just skip it
+      const p = data.preview;
+      const el = messageElements.get(m.id);
+      if (!el) return;
+      const card = document.createElement('a');
+      card.className = 'link-preview-card'; card.href = url; card.target = '_blank';
+      card.innerHTML = (p.image ? `<img src="${escapeHtml(p.image)}">` : '') +
+        `<div class="lp-body"><div class="lp-title">${escapeHtml(p.title || url)}</div><div class="lp-desc">${escapeHtml(p.description || '')}</div></div>`;
+      el.querySelector('.msg-bubble').appendChild(card);
+    } catch (e) { /* silent */ }
+  }
+
+  async function renderReactions(rowEl, reactions) {
+    rowEl.innerHTML = '';
+    Object.keys(reactions || {}).forEach(emoji => {
+      const users = reactions[emoji]; if (!users || !users.length) return;
+      const pill = document.createElement('span');
+      pill.className = users.includes(me) ? 'mine' : '';
+      if (isPremiumRoom && premiumPerks.includes('customEmojiBurst')) pill.classList.add('reaction-burst');
+      pill.textContent = emoji + ' ' + users.length;
+      pill.title = users.join(', ');
+      pill.addEventListener('click', () => reactTo(rowEl.dataset.msgId, emoji));
+      rowEl.appendChild(pill);
+    });
+  }
+
+  async function reactTo(msgId, emoji) {
+    const { res, data } = await apiPost(API.react, { token, messageId: parseInt(msgId,10), emoji });
+    if (handleCommonErrors(res, data)) return;
+    if (res.ok && data.ok) {
+      const el = messageElements.get(parseInt(msgId,10));
+      if (el) renderReactions(el.querySelector('.reactions'), data.message.reactions || {});
+    }
+  }
+
+  const QUICK_REACT_EMOJI = ['👍','❤️','😂','😮','😢','🔥'];
+  function toggleReactionPicker(msgId, anchorBtn) {
+    document.querySelectorAll('.reaction-picker.open').forEach(p => p.classList.remove('open'));
+    let picker = anchorBtn.parentElement.querySelector('.reaction-picker');
+    if (!picker) {
+      picker = document.createElement('div'); picker.className = 'reaction-picker';
+      QUICK_REACT_EMOJI.forEach(em => {
+        const b = document.createElement('button'); b.textContent = em;
+        b.addEventListener('click', () => { reactTo(msgId, em); picker.classList.remove('open'); });
+        picker.appendChild(b);
+      });
+      anchorBtn.parentElement.appendChild(picker);
+    }
+    picker.classList.toggle('open');
+  }
+
+  // Close any open reaction picker when clicking anywhere else on the
+  // page (outside the picker itself and its toggle button) — previously
+  // it only closed when you picked an emoji or opened a different one.
+  document.addEventListener('click', (e) => {
+    document.querySelectorAll('.reaction-picker.open').forEach(p => {
+      if (!p.contains(e.target) && e.target.closest('.msg-hover-actions') !== p.parentElement) {
+        p.classList.remove('open');
+      }
+    });
+  });
+
+  function startReply(m, plainText) {
+    replyingTo = { id: m.id, user: m.user, text: plainText || (m.type === 'file' ? '📎 ' + (m.fileName||'file') : (m.type === 'sticker' ? (m.stickerEmoji || 'sticker') : (m.type === 'poll' ? '📊 poll' : (m.type === 'gif' ? 'GIF' : '')))) };
+    const bar = document.getElementById('replyPreview');
+    bar.style.display = 'flex'; bar.style.cssText += 'align-items:center;gap:8px;padding:8px 14px;font-size:12px;';
+    bar.innerHTML = `<div style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-lo)">Replying to <b style="color:var(--text-hi)">${escapeHtml(replyingTo.user === me ? 'you' : replyingTo.user)}</b>: ${escapeHtml(replyingTo.text.slice(0,60))}</div>`;
+    const x = document.createElement('button'); x.textContent = '✕'; x.style.cssText = 'background:none;border:none;color:var(--text-lo);cursor:pointer;font-size:14px;';
+    x.addEventListener('click', cancelReply);
+    bar.appendChild(x);
+    document.getElementById('textInput').focus();
+  }
+  function cancelReply() { replyingTo = null; document.getElementById('replyPreview').style.display = 'none'; }
+
+  async function startEdit(m, plainText) {
+    const ta = document.getElementById('textInput');
+    ta.value = plainText || '';
+    ta.dataset.editingId = m.id;
+    ta.focus();
+    showToast('Editing message — press Send to save.', 'info');
+  }
+
+  async function pinMsg(id) {
+    const { res, data } = await apiPost(API.admin, { token, action: 'pin_message', messageId: parseInt(id,10) });
+    if (res.ok && data.ok) fetchAll(); else showToast((data.message || data.error || 'Failed to pin.'), 'error');
+  }
+
+  async function unpinMsg() {
+    const { res, data } = await apiPost(API.admin, { token, action: 'unpin_message' });
+    if (res.ok && data.ok) renderPinned(null); else showToast((data.message || data.error || 'Failed to unpin.'), 'error');
+  }
+
+  async function reportMsg(id) {
+    const reason = prompt('Why are you reporting this message? (optional)', '') || '';
+    const { res, data } = await apiPost(API.report, { token, action: 'report', messageId: parseInt(id,10), reason });
+    if (res.ok && data.ok) showToast('Reported to the host.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+  }
+
+  async function translateMsg(bubbleEl, plainText) {
+    const { res, data } = await apiGet(`${API.translate}?token=${encodeURIComponent(token)}&text=${encodeURIComponent(plainText)}&target=en`);
+    if (!res.ok || !data.ok) { showToast((data.error || 'Translation unavailable.'), 'error'); return; }
+    let line = bubbleEl.querySelector('.translate-line');
+    if (!line) { line = document.createElement('div'); line.className = 'translate-line'; bubbleEl.appendChild(line); }
+    line.textContent = '🌐 ' + data.translated;
+  }
+
+  async function appendMessage(m, animate = true) {
+    if (!m || !m.id || renderedIds.has(m.id)) return;
+    renderedIds.add(m.id);
+
+    const dec = await decryptIfNeeded(m.text || '');
+    const plainText = dec.wasEncrypted ? (dec.failed ? null : dec.plain) : (m.text || '');
+
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + (m.user === me ? 'mine' : 'theirs') + (m.role === 'super' ? ' super' : m.role === 'host' ? ' host' : '');
+    row.dataset.msgId = m.id;
+
+    // Message animation — forcedMsgAnimation (room-wide, set by a super
+    // via theme.php) applies to every message from every sender. Absent
+    // that, selfMsgAnimation applies only to the super user's own
+    // messages, as a personal flourish that doesn't touch anyone else's
+    // bubbles. animate=false on initial page load (existing messages),
+    // so the animation only plays for genuinely NEW messages, not on
+    // every page refresh.
+    const effectiveAnim = forcedMsgAnimation || (m.user === me && role === 'super' ? selfMsgAnimation : '');
+    if (animate && effectiveAnim) row.classList.add('msg-anim-' + effectiveAnim);
+
+    const meta = document.createElement('div');
+    meta.className = 'msg-meta';
+    let label = m.user === me ? 'You' : m.user;
+    if (m.role === 'super') label = '👑 ' + label; else if (m.role === 'host') label = '🛡️ ' + label;
+    meta.textContent = label + ' · ' + formatTime(m.ts);
+    if (isPremiumRoom && premiumPerks.includes('rainbowNames')) meta.classList.add('rainbow-name');
+    row.appendChild(meta);
+
+    const bubble = document.createElement('div');
+    bubble.className = 'msg-bubble bubble-glass' + (animate ? ' msg-glow-in' : '');
+    applyGlow(bubble);
+    const content = await buildBubbleContent(m, plainText);
+    bubble.appendChild(content);
+    row.appendChild(bubble);
+
+    const reactRow = document.createElement('div');
+    reactRow.className = 'reactions'; reactRow.dataset.msgId = m.id;
+    row.appendChild(reactRow);
+    renderReactions(reactRow, m.reactions || {});
+
+    const actions = document.createElement('div');
+    actions.className = 'msg-hover-actions';
+    if (m.type === 'text' && plainText && !hasCodeFence(plainText)) {
+      const copyBtn = document.createElement('button'); copyBtn.textContent = '📋';
+      copyBtn.title = 'Copy message';
+      copyBtn.addEventListener('click', () => copyToClipboard(plainText, copyBtn));
+      actions.appendChild(copyBtn);
+    }
+    const reactBtn = document.createElement('button'); reactBtn.textContent = '🙂';
+    reactBtn.addEventListener('click', () => toggleReactionPicker(m.id, reactBtn));
+    actions.appendChild(reactBtn);
+    const replyBtn = document.createElement('button'); replyBtn.textContent = '↩️ Reply';
+    replyBtn.addEventListener('click', () => startReply(m, plainText));
+    actions.appendChild(replyBtn);
+    if (m.user === me && m.type === 'text' && !dec.wasEncrypted && (Date.now() - m.ts) < 30000) {
+      const editBtn = document.createElement('button'); editBtn.textContent = '✏️ Edit';
+      editBtn.className = 'edit-btn-timed';
+      editBtn.dataset.msgTs = m.ts;
+      editBtn.addEventListener('click', () => startEdit(m, plainText));
+      actions.appendChild(editBtn);
+    }
+    if (m.type === 'text' && m.user !== me && plainText) {
+      const trBtn = document.createElement('button'); trBtn.textContent = '🌐';
+      trBtn.title = 'Translate';
+      trBtn.addEventListener('click', () => translateMsg(bubble, plainText));
+      actions.appendChild(trBtn);
+    }
+    if (m.user !== me) {
+      const repBtn = document.createElement('button'); repBtn.textContent = '🚩';
+      repBtn.title = 'Report';
+      repBtn.addEventListener('click', () => reportMsg(m.id));
+      actions.appendChild(repBtn);
+    }
+    if (role === 'super') {
+      const pinBtn = document.createElement('button'); pinBtn.textContent = '📌 Pin';
+      pinBtn.addEventListener('click', () => pinMsg(m.id));
+      actions.appendChild(pinBtn);
+    }
+    row.appendChild(actions);
+
+    messagesEl.appendChild(row);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+    messageElements.set(m.id, row);
+    if (m.id > lastId) lastId = m.id;
+    if (animate) fireConfetti();
+
+    // Desktop/sound notification for messages from others, especially @mentions
+    if (m.user !== me && plainText) {
+      const iAmMentioned = mentionsMe(plainText);
+      if (document.visibilityState !== 'visible') {
+        playNotifSound();
+        maybeNotifyDesktop(iAmMentioned ? `${m.user} mentioned you` : `${m.user} in ${room}`, plainText.slice(0, 120));
+      }
+    }
+  }
+
+  function applyRecentSync(recentSync) {
+    if (!recentSync) return;
+    recentSync.forEach(entry => {
+      const el = messageElements.get(entry.id);
+      if (el) renderReactions(el.querySelector('.reactions'), entry.reactions || {});
+    });
+  }
+
+  function renderPinned(pinned) {
+    if (!pinned) { pinnedBar.style.display = 'none'; return; }
+    pinnedBar.style.display = 'flex';
+    decryptIfNeeded(pinned.text || '').then(d => {
+      const text = d.wasEncrypted ? (d.failed ? '🔒 encrypted' : d.plain) : (pinned.text || '(file)');
+      pinnedBar.innerHTML = `📌 <span><b>${escapeHtml(pinned.user)}:</b> ${escapeHtml(text)}</span>`;
+      if (role === 'super') {
+        const unpinBtn = document.createElement('button');
+        unpinBtn.textContent = 'Unpin';
+        unpinBtn.style.cssText = 'margin-left:auto;flex-shrink:0;';
+        unpinBtn.addEventListener('click', unpinMsg);
+        pinnedBar.appendChild(unpinBtn);
+      }
+    });
+  }
+
+  function renderTyping(names) {
+    const el = document.getElementById('typingLine');
+    if (!names || !names.length) { el.textContent = ''; return; }
+    el.textContent = (names.length === 1 ? names[0] + ' is typing…' : names.join(', ') + ' are typing…');
+  }
+
+  function updateMuted(ms) {
+    if (ms > 0) { mutedBanner.classList.add('show'); mutedBanner.textContent = '🔇 Muted for ' + Math.ceil(ms/1000) + 's'; }
+    else mutedBanner.classList.remove('show');
+  }
+
+  // ---------------- Read receipts ----------------
+  function renderSeenLine(readReceipts) {
+    document.querySelectorAll('.seen-line').forEach(n => n.remove());
+    if (!readReceipts || !readReceipts.length || !lastId) return;
+    const seenBy = readReceipts.filter(r => r.lastReadId >= lastId).map(r => r.user);
+    if (!seenBy.length) return;
+    const el = messageElements.get(lastId);
+    if (!el || !el.classList.contains('mine')) return;
+    const line = document.createElement('div');
+    line.className = 'seen-line';
+    line.textContent = '✓✓ Seen by ' + seenBy.join(', ');
+    el.appendChild(line);
+  }
+
+  // ---------------- Jump to unread ----------------
+  function checkUnreadJump() {
+    const btn = document.getElementById('jumpUnreadBtn');
+    if (hasJumpedUnread || !unreadJumpTargetId) { btn.classList.remove('show'); return; }
+    const el = messageElements.get(unreadJumpTargetId);
+    if (!el) { btn.classList.remove('show'); return; }
+    const rect = el.getBoundingClientRect(); const containerRect = messagesEl.getBoundingClientRect();
+    btn.classList.toggle('show', rect.top > containerRect.bottom || rect.bottom < containerRect.top);
+  }
+  document.getElementById('jumpUnreadBtn').addEventListener('click', () => {
+    const el = messageElements.get(unreadJumpTargetId);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    hasJumpedUnread = true;
+    document.getElementById('jumpUnreadBtn').classList.remove('show');
+  });
+  messagesEl.addEventListener('scroll', checkUnreadJump);
+
+  // ---------------- Connection status ----------------
+  function setConnOk(ok) { const d = document.getElementById('connDot'); if (d) d.classList.toggle('bad', !ok); }
+
+  function localLastReadKey() { return 'qc_lastread_' + room + '_' + me; }
+  async function sendReadReceipt() {
+    if (lastId <= lastReadSent) return;
+    lastReadSent = lastId;
+    localStorage.setItem(localLastReadKey(), String(lastId));
+    try { await apiPost(API.read, { token, messageId: lastId }); } catch (e) {}
+  }
+
+  async function fetchAll() {
+    let res, data;
+    try { ({ res, data } = await apiGet(`${API.api}?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}`)); }
+    catch (e) { setConnOk(false); return; }
+    if (handleCommonErrors(res, data)) return;
+    if (!res.ok || !data.ok) { document.getElementById('roomSubEl').innerHTML = '<span class="conn-dot bad"></span>connection error'; setConnOk(false); return; }
+    setConnOk(true);
+    lastId = 0; renderedIds = new Set(); messageElements = new Map();
+    document.getElementById('roomTitleEl').textContent = data.title || room;
+    window.__polls = data.polls || [];
+    window.__isCoHost = !!data.isCoHost;
+    updateInviteQrVisibility();
+    const priorLastRead = parseInt(localStorage.getItem(localLastReadKey()) || '0', 10);
+    const firstUnread = data.messages.find(m => m.id > priorLastRead && m.user !== me);
+    unreadJumpTargetId = firstUnread ? firstUnread.id : 0;
+    hasJumpedUnread = !unreadJumpTargetId;
+    await syncEncryption(data.encEnabled, data.encSalt, data.superRecoveredKey);
+    applyPremiumState(data.isPremium, data.premiumPerks);
+    // Skeleton -> real content fade swap. messagesEl was showing skeleton
+    // rows (set right after the DOM is ready, before this first fetchAll
+    // response comes back — see the init call near the bottom of this
+    // script) — clear it now and fade the real messages in together,
+    // instead of the previous abrupt blank-then-populate.
+    messagesEl.innerHTML = '';
+    for (const m of data.messages) await appendMessage(m, false);
+    messagesEl.classList.remove('fade-in-content');
+    void messagesEl.offsetWidth;
+    messagesEl.classList.add('fade-in-content');
+    applyRoomTheme(data.roomTheme);
+    renderPinned(data.pinnedMessage);
+    renderTyping(data.typingUsers);
+    if (data.you) { updateMuted(data.you.mutedRemainingMs || 0); }
+    document.getElementById('roomSubEl').innerHTML = `<span class="conn-dot" id="connDot"></span>${(data.presence ? data.presence.length : '')} · ${(data.encEnabled ? 'encrypted' : 'not encrypted')}`;
+    renderSeenLine(data.readReceipts);
+    sendReadReceipt();
+    flushOutbox();
+  }
+
+  async function poll() {
+    let res, data;
+    try { ({ res, data } = await apiGet(`${API.api}?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}&since=${lastId}`)); }
+    catch (e) { setConnOk(false); return; }
+    if (handleCommonErrors(res, data)) return;
+    if (!res.ok || !data.ok) { setConnOk(false); return; }
+    setConnOk(true);
+    window.__polls = data.polls || [];
+    window.__isCoHost = !!data.isCoHost;
+    updateInviteQrVisibility();
+    await syncEncryption(data.encEnabled, data.encSalt, data.superRecoveredKey);
+    applyPremiumState(data.isPremium, data.premiumPerks);
+    for (const m of data.messages) await appendMessage(m);
+    applyRoomTheme(data.roomTheme);
+    renderPinned(data.pinnedMessage);
+    renderTyping(data.typingUsers);
+    applyRecentSync(data.recentSync);
+    if (data.you) updateMuted(data.you.mutedRemainingMs || 0);
+    if (data.messages.length) sendReadReceipt();
+    renderSeenLine(data.readReceipts);
+    checkUnreadJump();
+    flushOutbox();
+  }
+
+  // ---------------- Offline queue ----------------
+  async function flushOutbox() {
+    const items = getOutbox(room);
+    if (!items.length) return;
+    setOutbox(room, []);
+    for (const payload of items) {
+      const { res, data } = await apiPost(API.api, payload);
+      if (res.ok && data.ok) { await appendMessage(data.message); }
+      else if (!navigator.onLine) { pushOutbox(room, payload); }
+    }
+  }
+  window.addEventListener('online', flushOutbox);
+
+  // ---------------- Slash commands ----------------
+  const SLASH_HELP = [
+    '/help — show this list',
+    '/clear — clear the whole chat (host/super only)',
+    '/mute [name] [minutes] — mute a user (host/super)',
+    '/unmute [name] — unmute a user (host/super)',
+    '/kick [name] — remove a user (host/super)',
+    '/pin — pin your most recent message',
+  ].join('\n');
+  async function handleSlashCommand(raw) {
+    const parts = raw.trim().split(/\s+/);
+    const cmd = parts[0].toLowerCase();
+    if (cmd === '/help') { showToast(SLASH_HELP, 'info'); return true; }
+    if (cmd === '/clear') {
+      if (!confirm('Clear all messages and files in this room? This cannot be undone.')) return true;
+      try {
+        const res = await fetch(`${API.api}?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (res.ok && data.ok) { showToast('Chat cleared.', 'success'); fetchAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      } catch (e) { showToast('Could not reach the server — check your connection.', 'error'); }
+      return true;
+    }
+    if (cmd === '/mute' || cmd === '/unmute') {
+      const target = parts[1]; const mins = cmd === '/unmute' ? 0 : (parseFloat(parts[2]) || 5);
+      if (!target) { showToast('Usage: ' + cmd + ' username' + (cmd === '/mute' ? ' [minutes]' : ''), 'error'); return true; }
+      const { res, data } = await apiPost(API.mute, { token, targetUser: target, minutes: mins });
+      if (res.ok && data.ok) showToast('Updated ' + target + '.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+      return true;
+    }
+    if (cmd === '/kick') {
+      const target = parts[1];
+      if (!target) { showToast('Usage: /kick username', 'error'); return true; }
+      if (!confirm(`Remove ${target}?`)) return true;
+      const { res, data } = await apiPost(API.kick, { token, targetUser: target });
+      if (res.ok && data.ok) showToast('Removed ' + target + '.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+      return true;
+    }
+    if (cmd === '/pin') {
+      const mine = [...messageElements.entries()].reverse().find(([id, el]) => el.classList.contains('mine'));
+      if (!mine) { showToast('You have no message to pin.', 'error'); return true; }
+      await pinMsg(mine[0]);
+      return true;
+    }
+    return false;
+  }
+
+  // ---------------- Sending ----------------
+  async function sendMessage() {
+    const ta = document.getElementById('textInput');
+    const text = ta.value.trim();
+    if (!text) return;
+
+    if (text.startsWith('/')) {
+      const handled = await handleSlashCommand(text);
+      if (handled) { ta.value = ''; ta.style.height = 'auto'; saveDraft(room, me, ''); return; }
+    }
+
+    const editingId = ta.dataset.editingId;
+    ta.value = ''; ta.style.height = 'auto';
+    saveDraft(room, me, '');
+
+    let outgoing = text;
+    if (roomEncEnabled && roomEncKey) {
+      try { outgoing = await encryptForRoom(roomEncKey, text); } catch (e) { showToast('Encryption failed.', 'error'); return; }
+    }
+
+    if (editingId) {
+      delete ta.dataset.editingId;
+      const { res, data } = await apiPost(API.edit, { token, room, messageId: parseInt(editingId,10), text: outgoing });
+      if (handleCommonErrors(res, data)) return;
+      if (res.ok && data.ok) { renderedIds.delete(parseInt(editingId,10)); const el = messageElements.get(parseInt(editingId,10)); if (el) el.remove(); await appendMessage(data.message); }
+      else showToast((data.message || data.error || 'Failed to edit.'), 'error');
+      return;
+    }
+
+    const payload = { room, token, text: outgoing };
+    if (replyingTo) payload.replyTo = replyingTo.id;
+    let res, data;
+    try { ({ res, data } = await apiPost(API.api, payload)); }
+    catch (e) { pushOutbox(room, payload); showToast('Offline — message queued, will send when reconnected.', 'info'); cancelReply(); return; }
+    if (res.status === 403 && data.error === 'muted') { updateMuted(data.mutedRemainingMs || 0); showToast(data.message, 'error'); return; }
+    if (res.status === 400 && data.error === 'blocked_word') { showToast(data.message, 'error'); return; }
+    if (res.status === 429 && data.error === 'slow_mode') { showToast(data.message, 'error'); return; }
+    if (handleCommonErrors(res, data)) return;
+    if (res.ok && data.ok) { cancelReply(); await appendMessage(data.message); }
+    else showToast((data.message || data.error || 'Failed to send.'), 'error');
+  }
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+  const textInput = document.getElementById('textInput');
+  textInput.value = loadDraft(room, me);
+  textInput.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); sendMessage(); } });
+  textInput.addEventListener('input', (e) => {
+    e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+    saveDraft(room, me, e.target.value);
+    if (!typingTimer) { apiPost(API.typing, { token }).catch(()=>{}); typingTimer = setTimeout(() => { typingTimer = null; }, 2500); }
+  });
+
+  // ---------------- Uploads (+ image preview confirm, voice, requireFileApproval) ----------------
+  async function doUpload(file, kind) {
+    const fd = new FormData();
+    fd.append('room', room); fd.append('token', token); fd.append('file', file);
+    if (kind) fd.append('kind', kind);
+    if (replyingTo) fd.append('replyTo', replyingTo.id);
+    try {
+      const res = await fetch(API.upload, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (handleCommonErrors(res, data)) return;
+      if (res.ok && data.ok && data.pending) { cancelReply(); showToast('Sent for host approval — it will appear once approved.', 'info'); return; }
+      if (res.ok && data.ok) { cancelReply(); await appendMessage(data.message); }
+      else showToast((data.message || data.error || 'Upload failed.'), 'error');
+    } catch (e) { showToast('Upload failed — check connection.', 'error'); }
+  }
+
+  document.getElementById('attachBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+
+  // Code block button — wraps the current selection in ```fences```, or
+  // inserts an empty fenced block with the cursor placed inside if
+  // nothing is selected. This is the only practical way to type a code
+  // fence on a phone keyboard (typing ``` manually is impractical), so
+  // this button is what actually makes the code-box feature reachable.
+  document.getElementById('codeBtn').addEventListener('click', () => {
+    const ta = document.getElementById('textInput');
+    const start = ta.selectionStart, end = ta.selectionEnd;
+    const selected = ta.value.slice(start, end);
+    const before = ta.value.slice(0, start), after = ta.value.slice(end);
+    if (selected) {
+      ta.value = before + '```\n' + selected + '\n```' + after;
+      const cursor = before.length + 4 + selected.length + 5;
+      ta.focus(); ta.setSelectionRange(cursor, cursor);
+    } else {
+      ta.value = before + '```\n\n```' + after;
+      const cursor = before.length + 4;
+      ta.focus(); ta.setSelectionRange(cursor, cursor);
+    }
+    ta.dispatchEvent(new Event('input'));
+  });
+
+  document.getElementById('fileInput').addEventListener('change', async () => {
+    const file = document.getElementById('fileInput').files[0];
+    if (!file) return;
+    if (file.type && file.type.startsWith('image/')) {
+      pendingImageFile = file;
+      document.getElementById('imgPreviewThumb').src = URL.createObjectURL(file);
+      openOverlay('imgPreviewOverlay');
+    } else {
+      await doUpload(file);
+    }
+    document.getElementById('fileInput').value = '';
+  });
+  document.getElementById('imgPreviewCancelBtn').addEventListener('click', () => { pendingImageFile = null; closeOverlay('imgPreviewOverlay'); });
+  document.getElementById('imgPreviewSendBtn').addEventListener('click', async () => {
+    closeOverlay('imgPreviewOverlay');
+    if (pendingImageFile) { await doUpload(pendingImageFile); pendingImageFile = null; }
+  });
+
+  // ---------------- Voice messages ----------------
+  document.getElementById('voiceToolBtn').addEventListener('click', async () => {
+    if (isRecording) {
+      mediaRecorder.stop();
+      return;
+    }
+    if (!navigator.mediaDevices || !window.MediaRecorder) { showToast('Voice recording is not supported in this browser.', 'error'); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = async () => {
+        isRecording = false;
+        document.getElementById('voiceToolBtn').classList.remove('recording');
+        stream.getTracks().forEach(t => t.stop());
+        if (!recordedChunks.length) return;
+        const blob = new Blob(recordedChunks, { type: 'audio/webm' });
+        const file = new File([blob], 'voice.webm', { type: 'audio/webm' });
+        await doUpload(file, 'voice');
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('voiceToolBtn').classList.add('recording');
+      showToast('Recording… tap 🎤 again to stop and send.', 'info');
+    } catch (e) { showToast('Microphone access denied.', 'error'); }
+  });
+
+  // ---------------- Polls ----------------
+  document.getElementById('pollToolBtn').addEventListener('click', () => openOverlay('pollOverlay'));
+  document.getElementById('pollAddOptionBtn').addEventListener('click', () => {
+    const wrap = document.getElementById('pollOptionsWrap');
+    if (wrap.children.length >= 10) { showToast('Max 10 options.', 'error'); return; }
+    const inp = document.createElement('input'); inp.className = 'settings-input'; inp.placeholder = 'Option ' + (wrap.children.length + 1);
+    wrap.appendChild(inp);
+  });
+  document.getElementById('pollCreateBtn').addEventListener('click', async () => {
+    const question = document.getElementById('pollQuestion').value.trim();
+    const options = [...document.getElementById('pollOptionsWrap').querySelectorAll('input')].map(i => i.value.trim()).filter(Boolean);
+    if (!question) { showToast('Enter a question.', 'error'); return; }
+    if (options.length < 2) { showToast('Add at least 2 options.', 'error'); return; }
+    const { res, data } = await apiPost(API.poll, { token, action: 'create', question, options });
+    if (res.ok && data.ok) {
+      closeOverlay('pollOverlay');
+      document.getElementById('pollQuestion').value = '';
+      window.__polls = window.__polls || []; window.__polls.push(data.poll);
+      await appendMessage(data.message);
+    } else showToast((data.message || data.error || 'Failed to create poll.'), 'error');
+  });
+
+  // ---------------- Stickers ----------------
+  document.getElementById('stickerToolBtn').addEventListener('click', async () => {
+    openOverlay('stickerOverlay');
+    if (stickerCatalogCache) return;
+    const { res, data } = await apiGet(API.sticker + '?room=' + encodeURIComponent(room));
+    if (!res.ok || !data.ok) return;
+    stickerCatalogCache = data.stickers;
+    const grid = document.getElementById('stickerGrid'); grid.innerHTML = '';
+    stickerCatalogCache.forEach(s => {
+      const b = document.createElement('button'); b.textContent = s.emoji; b.title = s.label;
+      b.addEventListener('click', async () => {
+        const payload = { token, stickerId: s.id }; if (replyingTo) payload.replyTo = replyingTo.id;
+        const { res, data } = await apiPost(API.sticker, payload);
+        if (res.ok && data.ok) { closeOverlay('stickerOverlay'); cancelReply(); await appendMessage(data.message); }
+        else showToast((data.message || data.error || 'Failed to send.'), 'error');
+      });
+      grid.appendChild(b);
+    });
+  });
+
+  // ---------------- GIFs ----------------
+  let gifSearchTimer = null;
+  document.getElementById('gifToolBtn').addEventListener('click', () => { openOverlay('gifOverlay'); loadGifs('trending'); });
+  document.getElementById('gifSearchInput').addEventListener('input', (e) => {
+    clearTimeout(gifSearchTimer);
+    gifSearchTimer = setTimeout(() => loadGifs(e.target.value.trim() || 'trending'), 400);
+  });
+  async function loadGifs(q) {
+    const grid = document.getElementById('gifGrid'); grid.innerHTML = '<div class="spinner-line">Loading…</div>';
+    const { res, data } = await apiGet(`${API.gif}?token=${encodeURIComponent(token)}&q=${encodeURIComponent(q)}`);
+    if (!res.ok || !data.ok) { grid.innerHTML = '<div class="hint-text">GIF search unavailable right now.</div>'; return; }
+    grid.innerHTML = '';
+    (data.results || []).forEach(g => {
+      const img = document.createElement('img'); img.src = g.preview || g.url; img.loading = 'lazy';
+      img.addEventListener('click', async () => {
+        const payload = { token, gifUrl: g.url }; if (replyingTo) payload.replyTo = replyingTo.id;
+        const { res, data } = await apiPost(API.gif, payload);
+        if (res.ok && data.ok) { closeOverlay('gifOverlay'); cancelReply(); await appendMessage(data.message); }
+        else showToast((data.message || data.error || 'Failed to send.'), 'error');
+      });
+      grid.appendChild(img);
+    });
+    if (!(data.results || []).length) grid.innerHTML = `<div class="hint-text">${escapeHtml(data.warning || 'No results.')}</div>`;
+  }
+
+  // ---------------- QR "scan to send a file" ----------------
+  let qrCountdownTimer = null;
+  let qrStatusTimer = null;
+
+  function qrStopTimers() {
+    if (qrCountdownTimer) { clearInterval(qrCountdownTimer); qrCountdownTimer = null; }
+    if (qrStatusTimer) { clearInterval(qrStatusTimer); qrStatusTimer = null; }
+  }
+
+  async function qrRequestCode() {
+    const wrap = document.getElementById('qrCodeWrap');
+    const timerEl = document.getElementById('qrCodeTimer');
+    const statusEl = document.getElementById('qrCodeStatus');
+    qrStopTimers();
+    wrap.innerHTML = '<div class="spinner-line">Generating…</div>';
+    statusEl.textContent = '';
+    const payload = { token }; if (replyingTo) payload.replyTo = replyingTo.id;
+    const { res, data } = await apiPost(API.qrSend, payload);
+    if (!res.ok || !data.ok) {
+      wrap.innerHTML = '';
+      statusEl.textContent = data.message || data.error || 'Could not generate a QR code.';
+      return;
+    }
+    let svg;
+    try { svg = QRGen.renderSVG(data.url, { moduleSize: 7, border: 3 }); }
+    catch (e) { statusEl.textContent = 'Could not render the QR code.'; return; }
+    wrap.innerHTML = svg;
+
+    let secondsLeft = data.ttlSeconds || 60;
+    timerEl.textContent = 'Expires in ' + secondsLeft + 's';
+    qrCountdownTimer = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        timerEl.textContent = 'Expired';
+        qrStopTimers();
+        wrap.innerHTML = '';
+        return;
+      }
+      timerEl.textContent = 'Expires in ' + secondsLeft + 's';
+    }, 1000);
+
+    // Lightweight poll so the overlay can say "received!" the moment the
+    // phone finishes uploading, instead of waiting for the normal chat
+    // refresh cycle. The file message itself arrives via the normal poll
+    // regardless — this is purely a nicer confirmation in this dialog.
+    qrStatusTimer = setInterval(async () => {
+      const { res: sres, data: sdata } = await apiGet(`qr_upload.php?status=1&t=${encodeURIComponent(data.token)}`);
+      if (!sres.ok || !sdata.ok) return;
+      if (sdata.state === 'done') {
+        statusEl.textContent = '✅ File received!';
+        qrStopTimers();
+        setTimeout(() => closeOverlay('qrOverlay'), 1200);
+      } else if (sdata.state === 'expired' || sdata.state === 'gone') {
+        qrStopTimers();
+      }
+    }, 2000);
+  }
+
+  document.getElementById('qrToolBtn').addEventListener('click', () => { openOverlay('qrOverlay'); qrRequestCode(); });
+  document.getElementById('qrRegenBtn').addEventListener('click', qrRequestCode);
+  document.querySelector('#qrOverlay [data-close-overlay="qrOverlay"]').addEventListener('click', qrStopTimers);
+
+  // ---------------- QR "scan to join" (host/co-host/super only) ----------------
+  let joinQrCountdownTimer = null;
+
+  function joinQrStopTimer() {
+    if (joinQrCountdownTimer) { clearInterval(joinQrCountdownTimer); joinQrCountdownTimer = null; }
+  }
+
+  function formatMmSs(totalSeconds) {
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    return m + ':' + String(s).padStart(2, '0');
+  }
+
+  async function joinQrRequestCode() {
+    const wrap = document.getElementById('joinQrCodeWrap');
+    const timerEl = document.getElementById('joinQrCodeTimer');
+    const statusEl = document.getElementById('joinQrCodeStatus');
+    joinQrStopTimer();
+    wrap.innerHTML = '<div class="spinner-line">Generating…</div>';
+    statusEl.textContent = '';
+    const { res, data } = await apiPost(API.qrJoinSend, { token });
+    if (!res.ok || !data.ok) {
+      wrap.innerHTML = '';
+      statusEl.textContent = data.message || data.error || 'Could not generate a join code.';
+      return;
+    }
+    let svg;
+    try { svg = QRGen.renderSVG(data.url, { moduleSize: 7, border: 3 }); }
+    catch (e) { statusEl.textContent = 'Could not render the QR code.'; return; }
+    wrap.innerHTML = svg;
+
+    let secondsLeft = data.ttlSeconds || 1800;
+    timerEl.textContent = 'Expires in ' + formatMmSs(secondsLeft);
+    joinQrCountdownTimer = setInterval(() => {
+      secondsLeft -= 1;
+      if (secondsLeft <= 0) {
+        timerEl.textContent = 'Expired';
+        joinQrStopTimer();
+        wrap.innerHTML = '';
+        return;
+      }
+      timerEl.textContent = 'Expires in ' + formatMmSs(secondsLeft);
+    }, 1000);
+  }
+
+  document.getElementById('inviteQrLink').addEventListener('click', (e) => {
+    e.preventDefault();
+    openOverlay('joinQrOverlay');
+    joinQrRequestCode();
+  });
+  document.getElementById('joinQrRegenBtn').addEventListener('click', joinQrRequestCode);
+  document.querySelector('#joinQrOverlay [data-close-overlay="joinQrOverlay"]').addEventListener('click', joinQrStopTimer);
+
+  // ---------------- Search ----------------
+  document.getElementById('searchLink').addEventListener('click', (e) => { e.preventDefault(); openOverlay('searchOverlay'); document.getElementById('searchInput').focus(); });
+  let searchTimer = null;
+  document.getElementById('searchInput').addEventListener('input', (e) => {
+    clearTimeout(searchTimer);
+    const q = e.target.value.trim();
+    const out = document.getElementById('searchResults');
+    if (q.length < 2) { out.innerHTML = ''; return; }
+    searchTimer = setTimeout(async () => {
+      const { res, data } = await apiGet(`${API.search}?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}&q=${encodeURIComponent(q)}`);
+      if (!res.ok || !data.ok) { out.innerHTML = '<div class="hint-text">Search failed.</div>'; return; }
+      out.innerHTML = '';
+      (data.results || []).forEach(r => {
+        const row = document.createElement('div'); row.className = 'search-result';
+        row.innerHTML = `<div class="sr-meta">${escapeHtml(r.user || '')} · ${formatDate(r.ts)}</div><div>${escapeHtml((r.text || '').slice(0, 140))}</div>`;
+        row.addEventListener('click', () => {
+          closeOverlay('searchOverlay');
+          const el = messageElements.get(r.id);
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          else showToast('That message is above what has loaded — scroll up to find it.', 'info');
+        });
+        out.appendChild(row);
+      });
+      if (!(data.results || []).length) out.innerHTML = '<div class="hint-text">No matches.</div>';
+    }, 350);
+  });
+
+  // Show skeleton rows immediately, before the first fetchAll() response
+  // arrives — replaces what used to be a blank message area during the
+  // initial load. fetchAll() clears this and fades in the real messages
+  // once they're ready (see the messagesEl.innerHTML reset inside it).
+  messagesEl.innerHTML = skeletonMessagesHtml(6);
+
+  fetchAll().then(checkUnreadJump);
+  pollTimer = setInterval(poll, 2500);
+  setInterval(() => {
+    document.querySelectorAll('.edit-btn-timed').forEach(btn => {
+      if (Date.now() - parseInt(btn.dataset.msgTs, 10) >= 30000) btn.remove();
+    });
+  }, 5000);
+})();
+}
+</script>
+</body>
+</html>

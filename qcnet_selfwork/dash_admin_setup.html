@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Account Registration</title>
+    <link rel="stylesheet" href="dash_style.css">
+    <style>
+        .setup-container { max-width: 380px; margin: 5vh auto; padding: 40px; display: flex; flex-direction: column; gap: 15px; width: 90%; }
+    </style>
+</head>
+<body>
+    <div class="blob"></div><div class="blob b2"></div>
+    <div class="setup-container glass-panel fade-in">
+        <h2 style="margin-top:0;">🏢 Register Your Business</h2>
+        <p style="font-size:13px; margin-top:0; color:var(--dash-muted);">You've been invited to set up a new admin panel. Enter your invite token to continue.</p>
+        <label>Invite Token</label>
+        <input type="text" id="token" placeholder="e.g. A1B2C3D4" required style="text-transform:uppercase;">
+        <hr>
+        <p style="font-size:13px; margin-top:0; color:var(--dash-muted);">Verify your email address (must match the one this token was issued for):</p>
+        <label>Email Address</label>
+        <div style="display:flex; gap:8px;">
+            <input type="email" id="email" placeholder="you@example.com" required style="flex:1;">
+            <button type="button" onclick="sendOtp()" id="sendOtpBtn" style="white-space:nowrap;">Send Code</button>
+        </div>
+        <div id="otpRow" style="display:none; flex-direction:column; gap:8px;">
+            <label>Verification Code</label>
+            <div style="display:flex; gap:8px;">
+                <input type="text" id="otpCode" placeholder="6-digit code" maxlength="6" style="flex:1; letter-spacing:3px;">
+                <button type="button" onclick="verifyOtp()" style="white-space:nowrap;">Verify</button>
+            </div>
+        </div>
+        <div id="emailStatus" style="font-size:12px;"></div>
+        <hr>
+        <p style="font-size:13px; margin-top:0; color:var(--dash-muted);">Create your admin credentials (Alphanumeric ONLY):</p>
+        <label>New Username</label>
+        <input type="text" id="username" placeholder="Choose Username" pattern="[a-zA-Z0-9]+" required>
+        <label>New Password</label>
+        <input type="password" id="password" placeholder="Choose Password" pattern="[a-zA-Z0-9]+" required>
+        <button onclick="submitSetup()" class="primary-btn" style="margin-top:10px;">Create Admin Account</button>
+        <div id="msg" style="margin-top: 5px; font-weight: bold; text-align:center;"></div>
+        <a href="dash_login.html" style="color: var(--dash-muted); text-align:center; font-size: 12px; text-decoration:none;">← Back to Login</a>
+    </div>
+    <script src="dash_script.js"></script>
+    <script>
+        let emailVerified = false;
+        let cooldownTimer = null;
+
+        function setEmailStatus(text, color) {
+            const el = document.getElementById('emailStatus'); el.innerText = text; el.style.color = color || 'var(--dash-muted)';
+        }
+
+        async function sendOtp() {
+            const email = document.getElementById('email').value.trim();
+            if (!email) { setEmailStatus('Enter an email address first.', 'var(--dash-danger)'); return; }
+            emailVerified = false;
+            const btn = document.getElementById('sendOtpBtn'); btn.disabled = true;
+            const form = new URLSearchParams(); form.append('email', email); form.append('purpose', 'admin_register');
+            try {
+                const res = await fetch('email_otp.php?action=send_otp', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    document.getElementById('otpRow').style.display = 'flex';
+                    setEmailStatus('Code sent — check your inbox. It expires in 10 minutes.', 'var(--dash-success)');
+                    startCooldown(60);
+                } else {
+                    setEmailStatus(data.error || 'Could not send code.', 'var(--dash-danger)');
+                    if (data.cooldownRemaining) startCooldown(data.cooldownRemaining);
+                    else btn.disabled = false;
+                }
+            } catch (e) { setEmailStatus('Connection error.', 'var(--dash-danger)'); btn.disabled = false; }
+        }
+
+        function startCooldown(seconds) {
+            const btn = document.getElementById('sendOtpBtn'); btn.disabled = true;
+            let remaining = seconds;
+            btn.innerText = `Resend (${remaining}s)`;
+            clearInterval(cooldownTimer);
+            cooldownTimer = setInterval(() => {
+                remaining--;
+                if (remaining <= 0) { clearInterval(cooldownTimer); btn.disabled = false; btn.innerText = 'Resend Code'; }
+                else btn.innerText = `Resend (${remaining}s)`;
+            }, 1000);
+        }
+
+        async function verifyOtp() {
+            const email = document.getElementById('email').value.trim();
+            const code = document.getElementById('otpCode').value.trim();
+            if (!code) { setEmailStatus('Enter the code from your email.', 'var(--dash-danger)'); return; }
+            const form = new URLSearchParams(); form.append('email', email); form.append('purpose', 'admin_register'); form.append('code', code);
+            try {
+                const res = await fetch('email_otp.php?action=verify_otp', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    emailVerified = true;
+                    setEmailStatus('✅ Email verified.', 'var(--dash-success)');
+                    document.getElementById('email').disabled = true;
+                    document.getElementById('otpRow').style.display = 'none';
+                    document.getElementById('sendOtpBtn').style.display = 'none';
+                } else { setEmailStatus(data.error || 'Incorrect code.', 'var(--dash-danger)'); }
+            } catch (e) { setEmailStatus('Connection error.', 'var(--dash-danger)'); }
+        }
+
+        async function submitSetup() {
+            const token = document.getElementById('token').value; const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value; const email = document.getElementById('email').value.trim();
+            const msgEl = document.getElementById('msg');
+            if (!emailVerified) { msgEl.style.color = "var(--dash-danger)"; msgEl.innerText = "Please verify your email address first."; return; }
+            if (!/^[a-zA-Z0-9]+$/.test(username) || !/^[a-zA-Z0-9]+$/.test(password)) { msgEl.style.color = "var(--dash-danger)"; msgEl.innerText = "Error: Alphanumeric only."; return; }
+            const form = new URLSearchParams(); form.append('token', token); form.append('username', username); form.append('password', password); form.append('email', email);
+            try {
+                const response = await fetch('dash_auth.php?action=redeem_admin_token', { method: 'POST', body: form });
+                const result = await response.json();
+                if (result.status === 'success') { msgEl.style.color = 'var(--dash-success)'; msgEl.innerText = 'Success! Redirecting...'; setTimeout(() => window.location.href = 'dash_login.html', 2000); } 
+                else { msgEl.style.color = 'var(--dash-danger)'; msgEl.innerText = result.error; }
+            } catch (error) { msgEl.innerText = 'Connection error.'; }
+        }
+    </script>
+</body>
+</html>

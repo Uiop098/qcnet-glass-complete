@@ -1,0 +1,83 @@
+/**
+ * Card Styles
+ */
+
+.ui-card {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all var(--duration-normal) var(--ease-standard);
+}
+
+.ui-card-default {
+  border: 1px solid var(--color-border);
+}
+
+.ui-card-elevated {
+  box-shadow: var(--shadow-md);
+}
+
+.ui-card-outline {
+  border: 2px solid var(--color-border);
+  background-color: transparent;
+}
+
+.ui-card-glass {
+  background: var(--color-glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--color-glass-border);
+}
+
+.ui-card-interactive {
+  cursor: pointer;
+}
+
+.ui-card-interactive:hover {
+  box-shadow: var(--shadow-xl);
+}
+
+/* Padding sizes */
+.ui-card-padding-none {
+  padding: 0;
+}
+
+.ui-card-padding-sm {
+  padding: var(--space-3);
+}
+
+.ui-card-padding-md {
+  padding: var(--space-4);
+}
+
+.ui-card-padding-lg {
+  padding: var(--space-6);
+}
+
+.ui-card-padding-xl {
+  padding: var(--space-8);
+}
+
+/* Card sections */
+.ui-card-header {
+  padding: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  font-weight: var(--font-semibold);
+}
+
+.ui-card-content {
+  padding: var(--space-4);
+}
+
+.ui-card-footer {
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  background-color: var(--color-surface-hover);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .ui-card {
+    transition: box-shadow 200ms ease;
+  }
+}

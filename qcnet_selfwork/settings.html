@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Settings</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Room</div>
+    <a class="menu-link" href="room.html">💬 Back to Chat</a>
+    <a class="menu-link" href="dashboard.html" id="dashboardLink" style="display:none">📊 Dashboard</a>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Preferences</div>
+    <div class="toggle-row">🔔 Desktop notifications
+      <label class="toggle-switch"><input type="checkbox" id="prefDesktopNotif"><span class="knob"></span></label>
+    </div>
+    <div class="toggle-row">🔊 Notification sound
+      <label class="toggle-switch"><input type="checkbox" id="prefNotifSound"><span class="knob"></span></label>
+    </div>
+    <div class="toggle-row">🗜️ Compact mode
+      <label class="toggle-switch"><input type="checkbox" id="prefCompact"><span class="knob"></span></label>
+    </div>
+    <div class="toggle-row">🎞️ Reduce animations
+      <label class="toggle-switch"><input type="checkbox" id="prefReduceMotion"><span class="knob"></span></label>
+    </div>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div id="toastArea" class="toast-area"></div>
+  <div class="page" id="page-settings" style="overflow-y:auto">
+    <div class="settings-header">
+      <a class="back-link" href="room.html">← back</a>
+      <h2 class="fdisp">⚙️ Room Settings</h2>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Room title</h4>
+      <input class="settings-input" id="titleInput" placeholder="e.g. 🎮 Game Night" />
+      <button class="settings-btn primary" style="width:100%;margin-top:8px" id="saveTitleBtn">Save title</button>
+    </div>
+
+    <div class="settings-card glass">
+      <h4>People in this room</h4>
+      <div id="presenceList"><div class="spinner-line">Loading…</div></div>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Co-hosts</h4>
+      <div class="hint-text">Co-hosts can moderate without the host password.</div>
+      <div class="chip-list" id="coHostList"></div>
+      <input class="settings-input" id="coHostInput" placeholder="Username to add" style="margin-top:8px" />
+      <button class="settings-btn" style="width:100%;margin-top:6px" id="coHostAddBtn">+ Add co-host</button>
+    </div>
+
+    <div class="settings-card glass" id="coSuperCard" style="display:none">
+      <h4>Co-supers</h4>
+      <div class="hint-text">Co-supers can pick from preset themes/wallpapers/glow colors — no custom colors or uploads. Super-only to grant.</div>
+      <div class="chip-list" id="coSuperList"></div>
+      <input class="settings-input" id="coSuperInput" placeholder="Username to add" style="margin-top:8px" />
+      <button class="settings-btn" style="width:100%;margin-top:6px" id="coSuperAddBtn">+ Add co-super</button>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Slow mode</h4>
+      <div class="hint-text">Minimum seconds between messages, per person. 0 = off.</div>
+      <div class="settings-row">
+        <input class="settings-input" id="slowModeInput" type="number" min="0" max="3600" placeholder="Seconds" />
+        <button class="settings-btn primary" id="slowModeSaveBtn">Save</button>
+      </div>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Word filter</h4>
+      <div class="chip-list" id="bannedWordList"></div>
+      <div class="settings-row" style="margin-top:8px">
+        <input class="settings-input" id="bannedWordInput" placeholder="Word or phrase to block" />
+        <button class="settings-btn" id="bannedWordAddBtn">+ Add</button>
+      </div>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Host notification email</h4>
+      <div class="hint-text">Optional — used for off-app alerts. Leave blank to disable.</div>
+      <input class="settings-input" id="notifyEmailInput" type="email" placeholder="you@example.com" style="margin-top:8px" />
+      <button class="settings-btn primary" style="width:100%;margin-top:8px" id="notifyEmailSaveBtn">Save</button>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Auto-cleanup</h4>
+      <div class="hint-text">Automatically delete messages older than this many days. 0 = never.</div>
+      <div class="settings-row">
+        <input class="settings-input" id="autoCleanupInput" type="number" min="0" max="3650" placeholder="Days" />
+        <button class="settings-btn primary" id="autoCleanupSaveBtn">Save</button>
+      </div>
+    </div>
+
+    <div class="settings-card glass admin-only" id="fileApprovalCard">
+      <h4>File approval</h4>
+      <div class="toggle-row">Require host approval before member uploads are posted
+        <label class="toggle-switch"><input type="checkbox" id="fileApprovalToggle"><span class="knob"></span></label>
+      </div>
+      <div id="fileRequestList" style="margin-top:8px"></div>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Scheduled messages</h4>
+      <textarea class="settings-input" id="scheduleTextInput" placeholder="Message to post later…" style="min-height:60px;resize:vertical"></textarea>
+      <input class="settings-input" id="scheduleTimeInput" type="datetime-local" style="margin-top:8px" />
+      <button class="settings-btn primary" style="width:100%;margin-top:8px" id="scheduleCreateBtn">Schedule it</button>
+      <div id="scheduleList" style="margin-top:10px"></div>
+    </div>
+
+    <div class="settings-card glass admin-only" id="reportsCard">
+      <h4>Reports <span id="reportCountBadge"></span></h4>
+      <div id="reportsList"><div class="hint-text">No open reports.</div></div>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Banned users</h4>
+      <div id="bannedList"></div>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Devices blocked in this room</h4>
+      <div id="ipList"></div>
+    </div>
+
+    <div class="settings-card glass" id="firewallCard" style="display:none">
+      <h4>Site-wide firewall (super only)</h4>
+      <div id="firewallIpList"><div class="spinner-line">Loading…</div></div>
+      <input class="settings-input" id="blockIpInput" placeholder="IP address to block" style="margin-top:8px" />
+      <button class="settings-btn danger" style="width:100%;margin-top:6px" id="blockIpBtn">Block this IP</button>
+    </div>
+
+    <div class="settings-card glass" id="extraUploadsCard" style="display:none">
+      <h4>Extended file uploads (super only)</h4>
+      <div class="toggle-row">Enable extended upload types for this room
+        <label class="toggle-switch"><input type="checkbox" id="extraUploadsToggle"><span class="knob"></span></label>
+      </div>
+      <div class="toggle-row">Allow ALL extensions (use with care)
+        <label class="toggle-switch"><input type="checkbox" id="extraUploadsAllowAll"><span class="knob"></span></label>
+      </div>
+      <div class="chip-list" id="extraUploadsExtList"></div>
+      <input class="settings-input" id="extraUploadsMinutes" type="number" min="0" placeholder="Auto-expire after minutes (0 = no expiry)" style="margin-top:8px" />
+      <button class="settings-btn primary" style="width:100%;margin-top:8px" id="extraUploadsSaveBtn">Save</button>
+    </div>
+
+    <div class="settings-card glass" id="wallpaperCard" style="display:none">
+      <h4 id="wallpaperCardTitle">Room wallpaper</h4>
+      <div class="swatch-row" id="presetSwatches">
+        <div class="swatch" data-bg="#1b1030" style="background:#1b1030"></div>
+        <div class="swatch" data-bg="#062a28" style="background:#062a28"></div>
+        <div class="swatch" data-bg="#2a120f" style="background:#2a120f"></div>
+        <div class="swatch" data-bg="#eaf3fb" style="background:#eaf3fb"></div>
+      </div>
+      <div id="wallpaperFullControls" style="display:none">
+        <input class="settings-input" id="wallpaperUrlInput" placeholder="Or paste an image URL" style="margin-top:8px" />
+        <div class="settings-row">
+          <button class="settings-btn" id="wallpaperUrlBtn">Use URL</button>
+          <button class="settings-btn" id="wallpaperUploadBtn">Upload image</button>
+        </div>
+        <input type="file" id="wallpaperFileInput" accept="image/*" style="display:none" />
+      </div>
+      <button class="settings-btn" style="width:100%;margin-top:8px" id="resetWallpaperBtn">Reset wallpaper</button>
+      <h4 style="margin-top:14px">Your message glow color</h4>
+      <div class="swatch-row" id="presetGlowSwatches">
+        <div class="swatch" data-glow="#d4af37" style="background:#d4af37"></div>
+        <div class="swatch" data-glow="#8b5cf6" style="background:#8b5cf6"></div>
+        <div class="swatch" data-glow="#2dd4bf" style="background:#2dd4bf"></div>
+        <div class="swatch" data-glow="#ff8a4c" style="background:#ff8a4c"></div>
+        <div class="swatch" data-glow="#2f6fd6" style="background:#2f6fd6"></div>
+      </div>
+      <div id="glowFullControls" style="display:none;margin-top:8px">
+        <input class="settings-input" type="color" id="glowColorInput" value="#d4af37" />
+        <button class="settings-btn primary" style="width:100%;margin-top:8px" id="glowSaveBtn">Set custom glow color</button>
+      </div>
+    </div>
+
+    <div class="settings-card glass" id="encCard" style="display:none">
+      <h4>End-to-end encryption</h4>
+      <div class="hint-text" id="encStatusText">Checking…</div>
+      <input class="settings-input" id="encKeySetInput" type="password" placeholder="New encryption key" style="margin-top:8px" />
+      <div class="settings-row">
+        <button class="settings-btn primary" id="encEnableBtn">Enable / set key</button>
+        <button class="settings-btn danger" id="encDisableBtn">Disable</button>
+      </div>
+    </div>
+
+    <div class="settings-card glass">
+      <h4>Export chat history</h4>
+      <div class="settings-row">
+        <button class="settings-btn" id="exportTxtBtn">.txt</button>
+        <button class="settings-btn" id="exportJsonBtn">.json</button>
+        <button class="settings-btn" id="exportCsvBtn">.csv</button>
+      </div>
+    </div>
+
+    <div class="settings-card glass admin-only">
+      <h4>Room actions</h4>
+      <button class="settings-btn danger" style="width:100%" id="clearChatBtn">🗑️ Clear all messages</button>
+    </div>
+
+    <div class="settings-card glass" id="hostResetCard" style="display:none">
+      <h4>Host control (super only)</h4>
+      <button class="settings-btn danger" style="width:100%" id="resetHostBtn">Reset host password</button>
+    </div>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+const session = requireSession('login.html');
+// NOTE: we can't know yet whether a "member" session is actually a
+// co-host or co-super (that only comes back from the server), so the
+// old version of this redirected them away before they ever got a
+// chance to load. Now everyone with a session reaches loadAll(), and
+// loadAll() itself sends away anyone with truly no elevated access.
+</script>
+<script>
+if (session) {
+(function () {
+  const { token, room, role } = session;
+  if (role === 'super') {
+    document.getElementById('wallpaperCard').style.display = 'block';
+    document.getElementById('wallpaperCardTitle').textContent = 'Room wallpaper (super only)';
+    document.getElementById('wallpaperFullControls').style.display = 'block';
+    document.getElementById('glowFullControls').style.display = 'block';
+    document.getElementById('encCard').style.display = 'block';
+    document.getElementById('hostResetCard').style.display = 'block';
+    document.getElementById('firewallCard').style.display = 'block';
+    document.getElementById('extraUploadsCard').style.display = 'block';
+    document.getElementById('coSuperCard').style.display = 'block';
+    document.getElementById('dashboardLink').style.display = 'block';
+  }
+  else { document.getElementById('encCard').style.display = 'block'; } // host can also toggle encryption per README
+
+  // ---------------- Preferences ----------------
+  (function initPrefs() {
+    const p = getPrefs();
+    document.getElementById('prefDesktopNotif').checked = !!p.desktopNotif;
+    document.getElementById('prefNotifSound').checked = !!p.notifSound;
+    document.getElementById('prefCompact').checked = !!p.compact;
+    document.getElementById('prefReduceMotion').checked = !!p.reduceMotion;
+    applyPrefs();
+  })();
+  document.getElementById('prefDesktopNotif').addEventListener('change', async (e) => {
+    if (e.target.checked) { const granted = await requestDesktopNotifPermission(); if (!granted) { e.target.checked = false; return; } }
+    setPrefs(Object.assign(getPrefs(), { desktopNotif: e.target.checked }));
+  });
+  document.getElementById('prefNotifSound').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { notifSound: e.target.checked })));
+  document.getElementById('prefCompact').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { compact: e.target.checked })));
+  document.getElementById('prefReduceMotion').addEventListener('change', (e) => setPrefs(Object.assign(getPrefs(), { reduceMotion: e.target.checked })));
+
+  const EXTRA_UPLOAD_EXTENSIONS = ['psd','ai','eps','indd','apk','ipa','dmg','iso','deb','rpm','epub','mobi','ttf','otf','woff','woff2','torrent','sqlite','dwg','blend'];
+
+  async function loadFirewallList() {
+    if (role !== 'super') return;
+    const { res, data } = await apiPost(API.admin, { token, action: 'list_blocked_ips' });
+    const listEl = document.getElementById('firewallIpList');
+    if (!res.ok || !data.ok) { listEl.innerHTML = '<div class="hint-text">Could not load.</div>'; return; }
+    listEl.innerHTML = '';
+    (data.blocked || []).forEach(entry => {
+      const row = document.createElement('div'); row.className = 'ip-row';
+      row.innerHTML = `<span>${escapeHtml(entry.ip || entry)}${entry.reason ? ' — ' + escapeHtml(entry.reason) : ''}</span>`;
+      const unblockBtn = document.createElement('button'); unblockBtn.className = 'mini-btn unban'; unblockBtn.textContent = 'Unblock';
+      unblockBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.admin, { token, action: 'unblock_ip', ip: entry.ip || entry });
+        if (res.ok && data.ok) { showToast('Unblocked site-wide.', 'success'); loadFirewallList(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      row.appendChild(unblockBtn);
+      listEl.appendChild(row);
+    });
+    if (!listEl.children.length) listEl.innerHTML = '<div class="hint-text">No IPs blocked site-wide.</div>';
+  }
+  document.getElementById('blockIpBtn').addEventListener('click', async () => {
+    const ip = document.getElementById('blockIpInput').value.trim();
+    if (!ip) return;
+    const { res, data } = await apiPost(API.admin, { token, action: 'block_ip', ip });
+    if (res.ok && data.ok) { showToast('Blocked site-wide.', 'success'); document.getElementById('blockIpInput').value = ''; loadFirewallList(); }
+    else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  async function loadAll() {
+    const { res, data } = await apiGet(`${API.api}?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}`);
+    if (handleCommonErrors(res, data)) return;
+    if (!res.ok || !data.ok) return;
+
+    // A plain member with no co-host and no co-super status has nothing
+    // to do on this page — send them back. Co-hosts/co-supers/host/super
+    // all stay (this is the one thing this page couldn't know before
+    // this fetch came back, since it depends on server-side config, not
+    // just the session's role).
+    if (role === 'member' && !data.isCoHost && !data.hasLimitedThemeAccess) {
+      window.location.href = 'room.html';
+      return;
+    }
+
+    if (role === 'member' && data.hasLimitedThemeAccess) {
+      document.getElementById('wallpaperCard').style.display = 'block';
+      document.getElementById('wallpaperCardTitle').textContent = 'Room wallpaper (co-super — presets only)';
+      // wallpaperFullControls / glowFullControls stay hidden — presets only.
+    }
+
+    // Everything tagged admin-only was previously safe by accident (a
+    // blanket redirect kept every plain "member" session off this page
+    // entirely). Now that co-supers can reach this page for the theme
+    // card above, these need their own explicit gate — a co-super who
+    // ISN'T also a co-host has no business seeing mute/kick/banned-words/
+    // etc., only the theme card.
+    const isFullAdmin = (role === 'host' || role === 'super' || !!data.isCoHost);
+    document.querySelectorAll('.admin-only').forEach(el => { el.style.display = isFullAdmin ? '' : 'none'; });
+
+    document.getElementById('titleInput').value = data.title || '';
+
+    const pList = document.getElementById('presenceList'); pList.innerHTML = '';
+    (data.presence || []).forEach(p => {
+      if (p.name === session.user) return;
+      const row = document.createElement('div'); row.className = 'person-row';
+      row.innerHTML = `<span>${p.role === 'super' ? '👑 ' : p.role === 'host' ? '🛡️ ' : ''}${escapeHtml(p.name)}</span>`;
+      if (isFullAdmin) {
+        const btns = document.createElement('div'); btns.className = 'p-btns';
+        const muteBtn = document.createElement('button'); muteBtn.className = 'mini-btn mute'; muteBtn.textContent = 'Mute';
+        muteBtn.addEventListener('click', async () => {
+          const mins = prompt('Mute for how many minutes? (0 to unmute)', '5'); if (mins === null) return;
+          const { res, data } = await apiPost(API.mute, { token, targetUser: p.name, minutes: parseFloat(mins) });
+          if (res.ok && data.ok) showToast('Updated.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+        });
+        const kickBtn = document.createElement('button'); kickBtn.className = 'mini-btn kick'; kickBtn.textContent = 'Kick';
+        kickBtn.addEventListener('click', async () => {
+          if (!confirm(`Remove ${p.name}?`)) return;
+          const { res, data } = await apiPost(API.kick, { token, targetUser: p.name });
+          if (res.ok && data.ok) { showToast('Removed.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+        });
+        btns.appendChild(muteBtn); btns.appendChild(kickBtn);
+        // Ban — super only. Offers a choice of scope: this room only,
+        // or site-wide (blocks the IP from every room, via the firewall).
+        if (role === 'super') {
+          const banBtn = document.createElement('button'); banBtn.className = 'mini-btn kick'; banBtn.textContent = 'Ban';
+          banBtn.addEventListener('click', async () => {
+            const scope = prompt(`Ban ${p.name}'s IP address.\n\nType "room" to ban from this room only, or "site" to ban from the entire site.`, 'room');
+            if (scope === null) return;
+            const normalized = scope.trim().toLowerCase();
+            if (normalized !== 'room' && normalized !== 'site') { showToast('Type "room" or "site".', 'error'); return; }
+            if (!confirm(`Ban ${p.name}'s IP ${normalized === 'site' ? 'from the entire site' : 'from this room'}?`)) return;
+            const { res, data } = await apiPost(API.admin, { token, action: 'ban_target', targetUser: p.name, scope: normalized });
+            if (res.ok && data.ok) showToast(`Banned (${data.scope}).`, 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+          });
+          btns.appendChild(banBtn);
+        }
+        row.appendChild(btns);
+      }
+      pList.appendChild(row);
+    });
+    if (!pList.children.length) pList.innerHTML = '<div class="hint-text">No one else here right now.</div>';
+
+    // Co-hosts
+    const chList = document.getElementById('coHostList'); chList.innerHTML = '';
+    (data.coHosts || []).forEach(name => {
+      const chip = document.createElement('div'); chip.className = 'chip-item';
+      chip.innerHTML = `<span>${escapeHtml(name)}</span>`;
+      const x = document.createElement('button'); x.textContent = '✕';
+      x.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.admin, { token, action: 'remove_co_host', username: name });
+        if (res.ok && data.ok) { showToast('Removed.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      chip.appendChild(x); chList.appendChild(chip);
+    });
+    if (!chList.children.length) chList.innerHTML = '<div class="hint-text">No co-hosts yet.</div>';
+
+    // Co-supers (super-only card, hidden entirely for host)
+    if (role === 'super') {
+      const csList = document.getElementById('coSuperList'); csList.innerHTML = '';
+      (data.coSupers || []).forEach(name => {
+        const chip = document.createElement('div'); chip.className = 'chip-item';
+        chip.innerHTML = `<span>${escapeHtml(name)}</span>`;
+        const x = document.createElement('button'); x.textContent = '✕';
+        x.addEventListener('click', async () => {
+          const { res, data } = await apiPost(API.admin, { token, action: 'remove_co_super', username: name });
+          if (res.ok && data.ok) { showToast('Removed.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+        });
+        chip.appendChild(x); csList.appendChild(chip);
+      });
+      if (!csList.children.length) csList.innerHTML = '<div class="hint-text">No co-supers yet.</div>';
+    }
+
+    // Slow mode / auto-cleanup / notify email (host+super fields, present when isAdmin)
+    if (typeof data.slowModeSeconds === 'number') document.getElementById('slowModeInput').value = data.slowModeSeconds;
+    if (typeof data.autoCleanupDays === 'number') document.getElementById('autoCleanupInput').value = data.autoCleanupDays;
+    if (data.hostNotifyEmail !== null && data.hostNotifyEmail !== undefined) document.getElementById('notifyEmailInput').value = data.hostNotifyEmail;
+
+    // Word filter
+    const bwList = document.getElementById('bannedWordList'); bwList.innerHTML = '';
+    (data.bannedWords || []).forEach(w => {
+      const chip = document.createElement('div'); chip.className = 'chip-item';
+      chip.innerHTML = `<span>${escapeHtml(w)}</span>`;
+      const x = document.createElement('button'); x.textContent = '✕';
+      x.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.admin, { token, action: 'remove_banned_word', word: w });
+        if (res.ok && data.ok) { showToast('Removed.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      chip.appendChild(x); bwList.appendChild(chip);
+    });
+    if (!bwList.children.length) bwList.innerHTML = '<div class="hint-text">No blocked words.</div>';
+
+    // File approval + pending requests
+    document.getElementById('fileApprovalToggle').checked = !!data.requireFileApproval;
+    const frList = document.getElementById('fileRequestList'); frList.innerHTML = '';
+    (data.fileRequests || []).forEach(r => {
+      const row = document.createElement('div'); row.className = 'person-row';
+      row.innerHTML = `<span>📎 ${escapeHtml(r.fileName || 'file')} — ${escapeHtml(r.user || '')}</span>`;
+      const btns = document.createElement('div'); btns.className = 'p-btns';
+      const okBtn = document.createElement('button'); okBtn.className = 'mini-btn'; okBtn.textContent = 'Approve';
+      okBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.admin, { token, action: 'approve_file_request', requestId: r.id });
+        if (res.ok && data.ok) { showToast('Approved.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      const noBtn = document.createElement('button'); noBtn.className = 'mini-btn kick'; noBtn.textContent = 'Deny';
+      noBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.admin, { token, action: 'deny_file_request', requestId: r.id });
+        if (res.ok && data.ok) { showToast('Denied.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      btns.appendChild(okBtn); btns.appendChild(noBtn); row.appendChild(btns);
+      frList.appendChild(row);
+    });
+    if (!frList.children.length && data.requireFileApproval) frList.innerHTML = '<div class="hint-text">No pending uploads.</div>';
+
+    // Scheduled messages
+    const schList = document.getElementById('scheduleList'); schList.innerHTML = '';
+    (data.scheduledMessages || []).forEach(s => {
+      const row = document.createElement('div'); row.className = 'person-row';
+      row.innerHTML = `<span>${new Date(s.postAt).toLocaleString()} — ${escapeHtml((s.text||'').slice(0,40))}</span>`;
+      const cancelBtn = document.createElement('button'); cancelBtn.className = 'mini-btn kick'; cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.schedule, { token, action: 'cancel', id: s.id });
+        if (res.ok && data.ok) { showToast('Cancelled.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      row.appendChild(cancelBtn); schList.appendChild(row);
+    });
+    if (!schList.children.length) schList.innerHTML = '<div class="hint-text">Nothing scheduled.</div>';
+
+    // Reports
+    const repBadge = document.getElementById('reportCountBadge');
+    const repList = document.getElementById('reportsList'); repList.innerHTML = '';
+    const openReports = (data.reports || []).filter(r => !r.resolved);
+    repBadge.textContent = openReports.length ? `(${openReports.length} open)` : '';
+    openReports.forEach(r => {
+      const row = document.createElement('div'); row.className = 'report-row';
+      row.innerHTML = `<div class="rr-meta">reported by ${escapeHtml(r.reportedBy)} · message #${r.messageId} by ${escapeHtml(r.messageUser||'?')}</div><div>${escapeHtml(r.reason || '(no reason given)')}</div>`;
+      const resolveBtn = document.createElement('button'); resolveBtn.className = 'mini-btn'; resolveBtn.style.marginTop = '4px'; resolveBtn.textContent = 'Mark resolved';
+      resolveBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.report, { token, action: 'resolve', reportId: r.id });
+        if (res.ok && data.ok) { showToast('Resolved.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      row.appendChild(resolveBtn);
+      repList.appendChild(row);
+    });
+    if (!repList.children.length) repList.innerHTML = '<div class="hint-text">No open reports.</div>';
+
+    const bList = document.getElementById('bannedList'); bList.innerHTML = '';
+    (data.bannedUsers || []).forEach(b => {
+      const row = document.createElement('div'); row.className = 'person-row';
+      row.innerHTML = `<span>${escapeHtml(b.user)}</span>`;
+      const unbanBtn = document.createElement('button'); unbanBtn.className = 'mini-btn unban'; unbanBtn.textContent = 'Unban';
+      unbanBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.admin, { token, action: 'unban', targetUser: b.user });
+        if (res.ok && data.ok) { showToast('Unbanned.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      row.appendChild(unbanBtn);
+      bList.appendChild(row);
+    });
+    if (!bList.children.length) bList.innerHTML = '<div class="hint-text">No one banned.</div>';
+
+    const ipList = document.getElementById('ipList'); ipList.innerHTML = '';
+    (data.bannedIps || []).forEach(ipEntry => {
+      const row = document.createElement('div'); row.className = 'ip-row';
+      row.innerHTML = `<span>${escapeHtml(ipEntry.ip || ipEntry)}</span>`;
+      const unblockBtn = document.createElement('button'); unblockBtn.className = 'mini-btn unban'; unblockBtn.textContent = 'Unblock';
+      unblockBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.admin, { token, action: 'unban_ip', ip: ipEntry.ip || ipEntry });
+        if (res.ok && data.ok) { showToast('Unblocked for this room.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+      row.appendChild(unblockBtn);
+      ipList.appendChild(row);
+    });
+    if (!ipList.children.length) ipList.innerHTML = '<div class="hint-text">No devices blocked in this room.</div>';
+
+    if (role === 'super') {
+      document.getElementById('encStatusText').textContent = data.encEnabled ? 'Currently ON for this room.' : 'Currently OFF for this room.';
+      const eu = data.extraUploads || {};
+      document.getElementById('extraUploadsToggle').checked = !!eu.enabled;
+      document.getElementById('extraUploadsAllowAll').checked = !!eu.allowAll;
+      const extWrap = document.getElementById('extraUploadsExtList'); extWrap.innerHTML = '';
+      EXTRA_UPLOAD_EXTENSIONS.forEach(ext => {
+        const chip = document.createElement('label'); chip.className = 'chip-item'; chip.style.cursor = 'pointer';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.value = ext; cb.style.marginRight = '4px';
+        cb.checked = (eu.extensions || []).includes(ext);
+        chip.appendChild(cb); chip.appendChild(document.createTextNode('.' + ext));
+        extWrap.appendChild(chip);
+      });
+    }
+  }
+
+  document.getElementById('saveTitleBtn').addEventListener('click', async () => {
+    const title = document.getElementById('titleInput').value.trim();
+    const { res, data } = await apiPost(API.admin, { token, action: 'set_title', title });
+    if (res.ok && data.ok) showToast('Title saved.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('coHostAddBtn').addEventListener('click', async () => {
+    const username = document.getElementById('coHostInput').value.trim(); if (!username) return;
+    const { res, data } = await apiPost(API.admin, { token, action: 'add_co_host', username });
+    if (res.ok && data.ok) { document.getElementById('coHostInput').value = ''; showToast('Added.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('coSuperAddBtn')?.addEventListener('click', async () => {
+    const username = document.getElementById('coSuperInput').value.trim(); if (!username) return;
+    const { res, data } = await apiPost(API.admin, { token, action: 'add_co_super', username });
+    if (res.ok && data.ok) { document.getElementById('coSuperInput').value = ''; showToast('Added.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('slowModeSaveBtn').addEventListener('click', async () => {
+    const seconds = parseInt(document.getElementById('slowModeInput').value, 10) || 0;
+    const { res, data } = await apiPost(API.admin, { token, action: 'set_slow_mode', seconds });
+    if (res.ok && data.ok) showToast('Slow mode updated.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('bannedWordAddBtn').addEventListener('click', async () => {
+    const word = document.getElementById('bannedWordInput').value.trim(); if (!word) return;
+    const { res, data } = await apiPost(API.admin, { token, action: 'add_banned_word', word });
+    if (res.ok && data.ok) { document.getElementById('bannedWordInput').value = ''; showToast('Added.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('notifyEmailSaveBtn').addEventListener('click', async () => {
+    const email = document.getElementById('notifyEmailInput').value.trim();
+    const { res, data } = await apiPost(API.admin, { token, action: 'set_host_notify_email', email });
+    if (res.ok && data.ok) showToast('Saved.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('autoCleanupSaveBtn').addEventListener('click', async () => {
+    const days = parseInt(document.getElementById('autoCleanupInput').value, 10) || 0;
+    const { res, data } = await apiPost(API.admin, { token, action: 'set_auto_cleanup', days });
+    if (res.ok && data.ok) showToast('Saved.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('fileApprovalToggle').addEventListener('change', async (e) => {
+    const { res, data } = await apiPost(API.admin, { token, action: 'set_file_approval', enabled: e.target.checked });
+    if (res.ok && data.ok) { showToast('Saved.', 'success'); loadAll(); } else { showToast((data.message || data.error || 'Failed.'), 'error'); e.target.checked = !e.target.checked; }
+  });
+
+  document.getElementById('scheduleCreateBtn').addEventListener('click', async () => {
+    const text = document.getElementById('scheduleTextInput').value.trim();
+    const timeVal = document.getElementById('scheduleTimeInput').value;
+    if (!text || !timeVal) { showToast('Enter a message and a time.', 'error'); return; }
+    const postAt = new Date(timeVal).getTime();
+    const { res, data } = await apiPost(API.schedule, { token, action: 'create', text, postAt });
+    if (res.ok && data.ok) { document.getElementById('scheduleTextInput').value = ''; showToast('Scheduled.', 'success'); loadAll(); }
+    else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  document.getElementById('exportTxtBtn').addEventListener('click', () => window.open(`${API.export}?token=${encodeURIComponent(token)}&format=txt`, '_blank'));
+  document.getElementById('exportJsonBtn').addEventListener('click', () => window.open(`${API.export}?token=${encodeURIComponent(token)}&format=json`, '_blank'));
+  document.getElementById('exportCsvBtn').addEventListener('click', () => window.open(`${API.export}?token=${encodeURIComponent(token)}&format=csv`, '_blank'));
+
+  // Clearing chat is a DELETE request with query params, not a POST body.
+  document.getElementById('clearChatBtn').onclick = async () => {
+    if (!confirm('Clear all messages and files in this room? This cannot be undone.')) return;
+    try {
+      const res = await fetch(`${API.api}?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (res.ok && data.ok) showToast('Chat cleared.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+    } catch (e) { showToast('Could not reach the server — check your connection.', 'error'); }
+  };
+
+  // Preset wallpaper/glow swatches and reset work for BOTH full super
+  // and co-super — these are exactly the "presets only" surface a
+  // co-super is allowed to touch. The server (theme.php) enforces this
+  // too, so this isn't the only gate, just the matching UI for it.
+  document.querySelectorAll('#presetSwatches .swatch').forEach(sw => {
+    sw.addEventListener('click', async () => {
+      const { res, data } = await apiPost(API.theme, { token, background: sw.dataset.bg });
+      if (res.ok && data.ok) showToast('Wallpaper updated.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+  });
+  document.querySelectorAll('#presetGlowSwatches .swatch').forEach(sw => {
+    sw.addEventListener('click', async () => {
+      const { res, data } = await apiPost(API.theme, { token, glowColor: sw.dataset.glow });
+      if (res.ok && data.ok) showToast('Glow color set.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+  });
+  document.getElementById('resetWallpaperBtn').addEventListener('click', async () => {
+    const { res, data } = await apiPost(API.theme, { token, background: '' });
+    if (res.ok && data.ok) showToast('Wallpaper reset.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  if (role === 'super') {
+    document.getElementById('wallpaperUrlBtn').addEventListener('click', async () => {
+      const url = document.getElementById('wallpaperUrlInput').value.trim(); if (!url) return;
+      const { res, data } = await apiPost(API.theme, { token, background: url });
+      if (res.ok && data.ok) showToast('Wallpaper updated.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+    document.getElementById('glowSaveBtn').addEventListener('click', async () => {
+      const { res, data } = await apiPost(API.theme, { token, glowColor: document.getElementById('glowColorInput').value });
+      if (res.ok && data.ok) showToast('Glow color set.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+    document.getElementById('wallpaperUploadBtn').addEventListener('click', () => document.getElementById('wallpaperFileInput').click());
+    document.getElementById('wallpaperFileInput').addEventListener('change', async () => {
+      const file = document.getElementById('wallpaperFileInput').files[0]; if (!file) return;
+      const fd = new FormData(); fd.append('token', token); fd.append('file', file);
+      try {
+        const res = await fetch(API.wallpaperUpload, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (res.ok && data.ok) showToast('Wallpaper uploaded.', 'success'); else showToast((data.message || data.error || 'Upload failed.'), 'error');
+      } catch (e) { showToast('Upload failed.', 'error'); }
+    });
+    document.getElementById('resetHostBtn').addEventListener('click', async () => {
+      if (!confirm('Reset the host password? The current host will be logged out.')) return;
+      const { res, data } = await apiPost(API.admin, { token, action: 'reset_host_password' });
+      if (res.ok && data.ok) showToast(data.message || 'Host password reset.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+    document.getElementById('extraUploadsSaveBtn').addEventListener('click', async () => {
+      const enabled = document.getElementById('extraUploadsToggle').checked;
+      const allowAll = document.getElementById('extraUploadsAllowAll').checked;
+      const minutes = parseInt(document.getElementById('extraUploadsMinutes').value, 10) || 0;
+      const extensions = [...document.querySelectorAll('#extraUploadsExtList input:checked')].map(cb => cb.value);
+      const { res, data } = await apiPost(API.admin, { token, action: 'set_extra_uploads', enabled, allowAll, minutes, extensions });
+      if (res.ok && data.ok) showToast('Saved.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+    });
+  }
+
+  document.getElementById('encEnableBtn').addEventListener('click', async () => {
+    const pass = document.getElementById('encKeySetInput').value;
+    if (!pass || pass.length < 4) { showToast('Enter a key with at least 4 characters.', 'error'); return; }
+    const { res, data } = await apiPost(API.admin, { token, action: 'set_encryption', enabled: true, passphrase: pass });
+    if (res.ok && data.ok) { cacheRoomPassphrase(room, pass); document.getElementById('encKeySetInput').value = ''; showToast('Encryption enabled.', 'success'); loadAll(); }
+    else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+  document.getElementById('encDisableBtn').addEventListener('click', async () => {
+    if (!confirm('Disable encryption for this room? Old encrypted messages become unreadable to everyone.')) return;
+    const { res, data } = await apiPost(API.admin, { token, action: 'set_encryption', enabled: false });
+    if (res.ok && data.ok) { showToast('Encryption disabled.', 'success'); loadAll(); } else showToast((data.message || data.error || 'Failed.'), 'error');
+  });
+
+  loadAll();
+  loadFirewallList();
+})();
+}
+</script>
+</body>
+</html>

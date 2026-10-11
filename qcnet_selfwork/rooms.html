@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>QuickChat Glass v41 — Rooms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="glass-theme.css">
+<link rel="stylesheet" href="glass-app.css">
+<link rel="manifest" href="manifest.json">
+</head>
+<body data-theme="nocturne">
+
+<div class="blob" style="top:-10%; left:-10%;"></div>
+<div class="blob b2"></div>
+
+<div class="menu-toggle" data-menu-open aria-label="Open menu">☰</div>
+<div class="menu-scrim" data-menu-close></div>
+<div class="menu-drawer" aria-hidden="true">
+  <div class="menu-drawer-header">
+    <h3 class="fdisp">Menu</h3>
+    <button class="menu-close" data-menu-close aria-label="Close menu">✕</button>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">Site</div>
+    <a class="menu-link" href="dashboard.html" id="dashboardLink" style="display:none">📊 Site Stats (QuickChat)</a>
+    <a class="menu-link" href="dash_login.html">🏢 UB Business Dashboard</a>
+  </div>
+  <div class="menu-section">
+    <div class="menu-section-label">UI Theme</div>
+    <div class="theme-switch" role="tablist" aria-label="UI theme">
+      <button data-theme="nocturne" style="--dot:#8b5cf6" role="tab"><span class="dot"></span>Nocturne</button>
+      <button data-theme="aurora" style="--dot:#2dd4bf" role="tab"><span class="dot"></span>Aurora</button>
+      <button data-theme="ember" style="--dot:#ff8a4c" role="tab"><span class="dot"></span>Ember</button>
+      <button data-theme="frost" style="--dot:#2f6fd6" role="tab"><span class="dot"></span>Frost</button>
+    </div>
+  </div>
+</div>
+
+<div class="phone">
+  <div id="toastArea" class="toast-area"></div>
+  <div class="page" id="page-rooms">
+    <div class="rooms-header">
+      <h2 class="fdisp">🗂️ Rooms</h2>
+      <a class="back-link" href="login.html">← back</a>
+    </div>
+
+    <div class="settings-card glass" id="accountCard">
+      <h4 id="accountToggle" style="cursor:pointer">👤 Account — <span id="accountUsernameLabel"></span> (tap to change password)</h4>
+      <div id="accountPanel" style="display:none;margin-top:8px">
+        <input class="settings-input" id="curPassInput" type="password" placeholder="Current password" />
+        <input class="settings-input" id="newPassInput" type="password" placeholder="New password (min 6 characters)" style="margin-top:8px" />
+        <button class="settings-btn primary" style="width:100%;margin-top:8px" id="changePassBtn">Change password</button>
+      </div>
+    </div>
+
+    <div id="roomList"><div class="spinner-line">Loading rooms…</div></div>
+
+    <a class="create-room-fab" href="create-room.html">+ Create a new room</a>
+  </div>
+</div>
+
+<script src="glass-theme.js"></script>
+<script src="glass-app.js"></script>
+<script>
+const master = getMasterToken();
+if (!master.token) window.location.href = 'login.html';
+// A tenant-tier session landing here directly (bookmark, back button, etc.)
+// gets redirected rather than hitting a 403 from rooms.php — that endpoint
+// is master-tier only now (see rooms.php).
+if (master.tier === 'tenant') window.location.href = 'tenant_super.html';
+document.getElementById('dashboardLink').style.display = 'block';
+document.getElementById('accountUsernameLabel').textContent = master.username || '(unknown)';
+
+document.getElementById('accountToggle').addEventListener('click', () => {
+  const panel = document.getElementById('accountPanel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+});
+document.getElementById('changePassBtn').addEventListener('click', async () => {
+  const currentPassword = document.getElementById('curPassInput').value;
+  const newPassword = document.getElementById('newPassInput').value;
+  if (!currentPassword || !newPassword) { showToast('Fill in both fields.', 'error'); return; }
+  const { res, data } = await apiPost(API.auth, { action: 'change_super_password', masterToken: master.token, superUsername: master.username, currentPassword, newPassword });
+  if (res.ok && data.ok) {
+    document.getElementById('curPassInput').value = ''; document.getElementById('newPassInput').value = '';
+    showToast(data.message || 'Password changed.', 'success');
+  } else showToast((data.message || data.error || 'Failed.'), 'error');
+});
+
+const roomListEl = document.getElementById('roomList');
+
+function activeNamesText(activeUsers) {
+  if (!activeUsers || !activeUsers.length) return 'no one right now';
+  return activeUsers.map(u => escapeHtml(u.name)).join(', ');
+}
+
+async function loadRooms() {
+  roomListEl.innerHTML = skeletonRoomCardsHtml(4);
+  const { res, data } = await apiGet(`${API.rooms}?masterToken=${encodeURIComponent(master.token)}`);
+  if (handleCommonErrors(res, data)) return;
+  if (!res.ok || !data.ok) { roomListEl.innerHTML = '<div class="hint-text">Failed to load rooms.</div>'; return; }
+
+  if (!data.rooms.length) {
+    roomListEl.innerHTML = '<div class="hint-text">No rooms exist yet — create one below.</div>';
+    return;
+  }
+
+  roomListEl.innerHTML = '';
+  roomListEl.classList.remove('fade-in-content');
+  void roomListEl.offsetWidth;
+  roomListEl.classList.add('fade-in-content');
+  data.rooms.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'room-card glass';
+
+    if (r.pendingDeleteAt) {
+      const banner = document.createElement('div');
+      banner.className = 'pending-delete-banner';
+      banner.innerHTML = `<span>🗑️ Deleting soon…</span>`;
+      const undoBtn = document.createElement('button');
+      undoBtn.textContent = 'Undo';
+      undoBtn.addEventListener('click', async () => {
+        const { res, data } = await apiPost(API.rooms, { masterToken: master.token, room: r.room, action: 'undo_delete_room' });
+        if (res.ok && data.ok) { showToast('Room restored.', 'success'); loadRooms(); }
+        else showToast((data.message || data.error || 'Failed to undo.'), 'error');
+      });
+      banner.appendChild(undoBtn);
+      card.appendChild(banner);
+    }
+
+    const title = document.createElement('div');
+    title.className = 'rc-title';
+    title.textContent = r.title;
+    card.appendChild(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'rc-meta';
+    meta.innerHTML = `
+      🛡️ Host set: <b>${r.hostSet ? 'Yes' : 'No'}</b> · 🔑 PIN set: <b>${r.pinSet ? 'Yes' : 'No'}</b> · 🔒 Encrypted: <b>${r.encEnabled ? 'Yes' : 'No'}</b><br/>
+      👥 Active now: <b>${activeNamesText(r.activeUsers)}</b><br/>
+      📅 Created ${formatDate(r.createdAt)} · 🕓 Last active ${formatDate(r.lastActivity)}<br/>
+      💬 ${r.messageCount} messages · 🚫 ${r.bannedUserCount} banned
+    `;
+    card.appendChild(meta);
+
+    const btns = document.createElement('div');
+    btns.className = 'rc-btns';
+    const joinSuper = document.createElement('a');
+    joinSuper.className = 'rc-join-super'; joinSuper.href = '#'; joinSuper.textContent = '👑 Join as Super';
+    joinSuper.addEventListener('click', (e) => { e.preventDefault(); joinRoom(r.room, false); });
+    const joinHost = document.createElement('a');
+    joinHost.className = 'rc-join-host'; joinHost.href = '#'; joinHost.textContent = '🕵️ Join as Host';
+    joinHost.addEventListener('click', (e) => { e.preventDefault(); joinRoom(r.room, true); });
+    btns.appendChild(joinSuper); btns.appendChild(joinHost);
+    card.appendChild(btns);
+
+    if (!r.pendingDeleteAt) {
+      // Password/PIN controls — default super admin only (this whole page
+      // is already master-only, see the tier check in rooms.php). Lets the
+      // default super user reset a room's host password or PIN directly
+      // from here, without knowing the current one and without joining.
+      const credBtns = document.createElement('div');
+      credBtns.className = 'rc-btns';
+      credBtns.style.marginTop = '6px';
+
+      const pwBtn = document.createElement('button');
+      pwBtn.className = 'mini-btn';
+      pwBtn.textContent = '🔑 Set host password';
+      pwBtn.addEventListener('click', async () => {
+        const newPassword = prompt(`New host password for "${r.title}" (min 4 characters):`);
+        if (newPassword === null) return;
+        if (newPassword.trim().length < 4) { showToast('Password must be at least 4 characters.', 'error'); return; }
+        const { res, data } = await apiPost(API.rooms, { masterToken: master.token, room: r.room, action: 'set_host_password', newPassword: newPassword.trim() });
+        if (res.ok && data.ok) showToast('Host password updated.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+
+      const pinBtn = document.createElement('button');
+      pinBtn.className = 'mini-btn';
+      pinBtn.textContent = '🔢 Set room PIN';
+      pinBtn.addEventListener('click', async () => {
+        const newPin = prompt(`New PIN for "${r.title}":`);
+        if (newPin === null) return;
+        if (newPin.trim() === '') { showToast('PIN cannot be empty.', 'error'); return; }
+        const { res, data } = await apiPost(API.rooms, { masterToken: master.token, room: r.room, action: 'set_pin', newPin: newPin.trim() });
+        if (res.ok && data.ok) showToast('Room PIN updated.', 'success'); else showToast((data.message || data.error || 'Failed.'), 'error');
+      });
+
+      credBtns.appendChild(pwBtn); credBtns.appendChild(pinBtn);
+      card.appendChild(credBtns);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'rc-delete';
+      delBtn.textContent = '🗑️ Delete room';
+      delBtn.addEventListener('click', async () => {
+        if (!confirm(`Delete "${r.title}"? You can undo for a few seconds after.`)) return;
+        const { res, data } = await apiPost(API.rooms, { masterToken: master.token, room: r.room, action: 'delete_room' });
+        if (res.ok && data.ok) { showToast('Room deletion started — undo available briefly.', 'info'); loadRooms(); }
+        else showToast((data.message || data.error || 'Failed to delete.'), 'error');
+      });
+      card.appendChild(delBtn);
+    }
+
+    roomListEl.appendChild(card);
+  });
+}
+
+async function joinRoom(room, asHost) {
+  let roomPassword = '';
+  if (master.tier !== 'master') {
+    // Tenant-tier super accounts (added via a Dashboard purchase) don't get
+    // blanket access to every room — only the single default super admin
+    // does. Prove you actually know this room's password/PIN first.
+    roomPassword = prompt(`Enter the password/PIN for room "${room}" to continue:`) || '';
+    if (!roomPassword) { showToast('A room password is required.', 'error'); return; }
+  }
+  const { res, data } = await apiPost(API.auth, { action: 'super_join', masterToken: master.token, room, roomPassword, displayName: master.name, asHost });
+  if (!res.ok || !data.ok) { showToast((data.message || data.error || 'Failed to join.'), 'error'); return; }
+  setSession({ token: data.token, role: data.role, user: data.user, room: data.room });
+  window.location.href = 'room.html';
+}
+
+loadRooms();
+</script>
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Profile</title>
+<link rel="stylesheet" href="dash_style.css">
+<style>
+    .profile-header { display:flex; align-items:center; gap:18px; padding:25px; margin-bottom:20px; flex-wrap:wrap; }
+    .avatar-circle { width:70px; height:70px; border-radius:50%; background:var(--accent); display:flex; align-items:center; justify-content:center; font-size:26px; font-weight:700; flex-shrink:0; }
+    .role-badge { display:inline-block; padding:4px 12px; border-radius:999px; font-size:12px; font-weight:600; background:rgba(139,92,246,0.25); color:#c4b5fd; margin-top:4px; }
+    .status-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:6px; }
+    .status-active { background:var(--good); } .status-deactivated { background:var(--danger); }
+    .section-card { padding:22px; margin-bottom:18px; }
+    .section-card h3 { margin-top:0; display:flex; align-items:center; gap:8px; }
+    .kv-row { display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--glass-border); font-size:14px; gap:10px; }
+    .kv-row:last-child { border-bottom:none; }
+    .kv-row .k { color:#a89bc2; }
+    .kv-row .v { text-align:right; word-break:break-word; }
+    .metric-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px,1fr)); gap:12px; }
+    .metric-box { background:rgba(0,0,0,0.2); border-radius:10px; padding:16px; text-align:center; }
+    .metric-box .num { font-size:24px; font-weight:700; color:var(--good); }
+    .metric-box .lbl { font-size:11px; color:#a89bc2; text-transform:uppercase; margin-top:4px; }
+    .activity-item { display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--glass-border); font-size:13px; }
+    .activity-item:last-child { border-bottom:none; }
+    .activity-item .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); margin-top:6px; flex-shrink:0; }
+    .activity-item .when { color:#a89bc2; font-size:11px; }
+    .danger-zone { border: 1px solid rgba(255,107,107,0.4); }
+    .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:60; align-items:center; justify-content:center; padding:20px; box-sizing:border-box; }
+    .modal.active { display:flex; }
+    .modal-box { width:100%; max-width:420px; max-height:calc(100vh - 40px); overflow-y:auto; padding:25px; display:flex; flex-direction:column; gap:12px; box-sizing:border-box; }
+</style>
+</head>
+<body>
+<div class="blob"></div><div class="blob b2"></div>
+
+<nav class="sidebar glass-panel fade-in">
+    <h2 style="margin-top:5px; color:#4ade80;">👤 My Profile</h2>
+    <button onclick="window.location.href='dash_admin.html'" id="backAdminBtn" style="display:none;">← Back to Dashboard</button>
+    <button onclick="window.location.href='dash_user.html'" id="backUserBtn" style="display:none;">← Back to Dashboard</button>
+    <div style="margin-top:auto;"><hr style="border-color:var(--glass-border);"><button onclick="logout()">🚪 Log Out</button></div>
+</nav>
+
+<main class="main-content">
+    <div id="top-bar" class="top-bar glass-panel fade-in"></div>
+    <div id="content" class="fade-in"></div>
+</main>
+
+<!-- Change Password modal -->
+<div class="modal" id="pwModal"><div class="modal-box glass-panel">
+    <h3 style="margin-top:0;">🔑 Change Password</h3>
+    <input type="password" id="cp-current" placeholder="Current password">
+    <input type="password" id="cp-new" placeholder="New password (min 6 characters)">
+    <div id="cp-msg" style="font-size:12px;"></div>
+    <div style="display:flex; gap:10px;"><button class="primary-btn" style="flex:1;" onclick="submitChangePassword()">Change Password</button><button style="flex:1;" onclick="closeModal('pwModal')">Cancel</button></div>
+</div></div>
+
+<!-- Edit Profile modal -->
+<div class="modal" id="editModal"><div class="modal-box glass-panel">
+    <h3 style="margin-top:0;">✏️ Edit Profile</h3>
+    <input type="text" id="ep-name" placeholder="Full name">
+    <input type="tel" id="ep-mobile" placeholder="Mobile number">
+    <input type="text" id="ep-address" placeholder="Address">
+    <div style="display:flex; gap:8px;">
+        <input type="email" id="ep-email" placeholder="Email address" style="flex:1;">
+        <button type="button" onclick="sendProfileOtp()" id="ep-sendOtpBtn" style="white-space:nowrap;">Send Code</button>
+    </div>
+    <div id="ep-otpRow" style="display:none; gap:8px;">
+        <input type="text" id="ep-otpCode" placeholder="6-digit code" maxlength="6" style="flex:1; letter-spacing:3px;">
+        <button type="button" onclick="verifyProfileOtp()" style="white-space:nowrap;">Verify</button>
+    </div>
+    <div id="ep-msg" style="font-size:12px;"></div>
+    <div style="display:flex; gap:10px;"><button class="primary-btn" style="flex:1;" onclick="submitEditProfile()">Save Changes</button><button style="flex:1;" onclick="closeModal('editModal')">Cancel</button></div>
+</div></div>
+
+<!-- 2FA modal -->
+<div class="modal" id="tfaModal"><div class="modal-box glass-panel">
+    <h3 style="margin-top:0;" id="tfa-title">🔐 Two-Factor Authentication</h3>
+    <div id="tfa-body"></div>
+</div></div>
+
+<!-- Deactivate modal -->
+<div class="modal" id="deactModal"><div class="modal-box glass-panel">
+    <h3 style="margin-top:0; color:var(--danger);">⚠️ Deactivate Account</h3>
+    <p style="font-size:13px; color:#ccc;">This will immediately log you out and block future logins until an admin reactivates your account. This cannot be undone by you.</p>
+    <input type="password" id="deact-pass" placeholder="Confirm your password">
+    <div id="deact-msg" style="font-size:12px;"></div>
+    <div style="display:flex; gap:10px;"><button style="flex:1; background:rgba(255,107,107,0.3); color:var(--danger); border-color:var(--danger);" onclick="submitDeactivate()">Deactivate</button><button style="flex:1;" onclick="closeModal('deactModal')">Cancel</button></div>
+</div></div>
+
+<script src="dash_script.js"></script>
+<script>
+let isAdmin = false, myUsername = '';
+
+function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+function openModal(id) { document.getElementById(id).classList.add('active'); }
+function logout() { fetch('dash_auth.php?action=logout').then(() => window.location.href = 'dash_login.html'); }
+
+async function checkAuthAndLoad() {
+    const res = await fetch('dash_auth.php?action=check_auth');
+    const data = await res.json();
+    if (data.status !== 'success') { window.location.href = 'dash_login.html'; return; }
+    isAdmin = data.role === 'admin'; myUsername = data.user;
+    document.getElementById(isAdmin ? 'backAdminBtn' : 'backUserBtn').style.display = 'block';
+    document.getElementById('top-bar').innerHTML = `<div class="user-info">My Profile — <span>${myUsername}</span></div>`;
+    loadProfile();
+}
+
+let profileCache = null;
+async function loadProfile() {
+    const res = await fetch('dash_profile_api.php?action=get_profile');
+    const data = await res.json();
+    if (data.status !== 'success') { document.getElementById('content').innerHTML = `<div class="glass-panel" style="padding:25px;">${data.error || 'Failed to load profile.'}</div>`; return; }
+    profileCache = data;
+    render(data);
+}
+
+function timeAgo(ts) {
+    if (!ts) return 'Never';
+    const diff = Math.floor(Date.now() / 1000) - ts;
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 2592000) return Math.floor(diff / 86400) + 'd ago';
+    return new Date(ts * 1000).toLocaleDateString();
+}
+
+function render(data) {
+    const p = data.profile;
+    const initial = (p.name || p.username).charAt(0).toUpperCase();
+    let html = `
+    <div class="profile-header glass-panel">
+        <div class="avatar-circle">${initial}</div>
+        <div>
+            <div style="font-size:20px; font-weight:700;">${p.name}</div>
+            <div style="color:#a89bc2; font-size:13px;">@${p.username} · ${p.business_name}</div>
+            <span class="role-badge">${p.role}</span>
+            <span style="margin-left:8px; font-size:12px;"><span class="status-dot status-${p.status === 'active' ? 'active' : 'deactivated'}"></span>${p.status === 'active' ? 'Active' : 'Deactivated'}</span>
+        </div>
+        <div style="margin-left:auto; display:flex; gap:8px; flex-wrap:wrap;">
+            <button class="primary-btn" onclick="openModal('editModal'); document.getElementById('ep-name').value='${(p.name||'').replace(/'/g,"\\'")}'; document.getElementById('ep-mobile').value='${p.mobile||''}'; document.getElementById('ep-address').value='${(p.address||'').replace(/'/g,"\\'")}'; document.getElementById('ep-email').value='${p.email||''}';">✏️ Edit Profile</button>
+            <button onclick="openModal('pwModal')">🔑 Change Password</button>
+        </div>
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>📇 Personal Details</h3>
+        <div class="kv-row"><span class="k">Email</span><span class="v">${p.email || '—'}</span></div>
+        <div class="kv-row"><span class="k">Mobile</span><span class="v">${p.mobile || '—'}</span></div>
+        <div class="kv-row"><span class="k">Address</span><span class="v">${p.address || '—'}</span></div>
+        <div class="kv-row"><span class="k">Date of Birth</span><span class="v">${p.dob || '—'}</span></div>
+        ${p.tags ? `<div class="kv-row"><span class="k">Tags</span><span class="v">${p.tags}</span></div>` : ''}
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>📊 Metrics</h3>
+        <div class="metric-grid">
+            <div class="metric-box"><div class="num">${data.metrics.payments_made}</div><div class="lbl">Payments Made</div></div>
+            <div class="metric-box"><div class="num">₹${data.metrics.total_paid}</div><div class="lbl">Total Paid</div></div>
+        </div>
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>🖥️ System Information</h3>
+        <div class="kv-row"><span class="k">Account Created</span><span class="v">${p.created_at ? new Date(p.created_at * 1000).toLocaleDateString() : '—'}</span></div>
+        <div class="kv-row"><span class="k">Last Login</span><span class="v">${timeAgo(p.last_login_at)}</span></div>
+        <div class="kv-row"><span class="k">Last Login IP</span><span class="v">${p.last_login_ip || '—'}</span></div>
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>🔐 Two-Factor Authentication</h3>
+        <p style="font-size:13px; color:#ccc; margin-top:0;">${p.twofa_enabled ? 'Enabled — an authenticator app code is required at login, alongside your password.' : 'Not enabled. Add an extra layer of security to your account.'}</p>
+        ${p.twofa_enabled ? `<button style="background:rgba(255,107,107,0.2); color:var(--danger); border-color:var(--danger);" onclick="showDisable2fa()">Disable 2FA</button>` : `<button class="primary-btn" onclick="showSetup2fa()">Enable 2FA</button>`}
+    </div>
+
+    <div class="section-card glass-panel">
+        <h3>🕘 Recent Activity</h3>
+        ${data.activity.length ? data.activity.map(a => `<div class="activity-item"><div class="dot"></div><div><div>${a.summary}</div><div class="when">${timeAgo(a.ts)}</div></div></div>`).join('') : '<p style="color:#a89bc2; font-size:13px;">No activity recorded yet.</p>'}
+    </div>
+    `;
+    if (!isAdmin) {
+        html += `
+        <div class="section-card glass-panel danger-zone">
+            <h3 style="color:var(--danger);">⚠️ Deactivate Account</h3>
+            <p style="font-size:13px; color:#ccc;">Deactivating logs you out and blocks future logins until your admin reactivates you.</p>
+            <button style="background:rgba(255,107,107,0.2); color:var(--danger); border-color:var(--danger);" onclick="openModal('deactModal')">Deactivate My Account</button>
+        </div>`;
+    }
+    document.getElementById('content').innerHTML = html;
+}
+
+// ---- Change password ----
+async function submitChangePassword() {
+    const current_password = document.getElementById('cp-current').value;
+    const new_password = document.getElementById('cp-new').value;
+    const msg = document.getElementById('cp-msg');
+    const form = new URLSearchParams({ current_password, new_password });
+    const res = await fetch('dash_profile_api.php?action=change_password', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.status === 'success') { msg.style.color = '#4ade80'; msg.innerText = 'Password changed.'; setTimeout(() => closeModal('pwModal'), 1200); }
+    else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+}
+
+// ---- Edit profile (with email-change OTP) ----
+async function sendProfileOtp() {
+    const email = document.getElementById('ep-email').value.trim();
+    const msg = document.getElementById('ep-msg');
+    if (!email) { msg.style.color = '#ff6b6b'; msg.innerText = 'Enter an email first.'; return; }
+    if (email.toLowerCase() === (profileCache.profile.email || '').toLowerCase()) { msg.style.color = '#a89bc2'; msg.innerText = 'This is already your current email — no verification needed.'; return; }
+    const form = new URLSearchParams({ email, purpose: 'profile_email_change' });
+    const res = await fetch('email_otp.php?action=send_otp', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.status === 'success') { document.getElementById('ep-otpRow').style.display = 'flex'; msg.style.color = '#4ade80'; msg.innerText = 'Code sent — check your inbox.'; }
+    else { msg.style.color = '#ff6b6b'; msg.innerText = data.error || 'Could not send code.'; }
+}
+async function verifyProfileOtp() {
+    const email = document.getElementById('ep-email').value.trim();
+    const code = document.getElementById('ep-otpCode').value.trim();
+    const msg = document.getElementById('ep-msg');
+    const form = new URLSearchParams({ email, purpose: 'profile_email_change', code });
+    const res = await fetch('email_otp.php?action=verify_otp', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.status === 'success') { msg.style.color = '#4ade80'; msg.innerText = '✅ Email verified — click Save Changes.'; document.getElementById('ep-otpRow').style.display = 'none'; }
+    else { msg.style.color = '#ff6b6b'; msg.innerText = data.error || 'Incorrect code.'; }
+}
+async function submitEditProfile() {
+    const name = document.getElementById('ep-name').value.trim();
+    const mobile = document.getElementById('ep-mobile').value.trim();
+    const address = document.getElementById('ep-address').value.trim();
+    const email = document.getElementById('ep-email').value.trim();
+    const msg = document.getElementById('ep-msg');
+    const form = new URLSearchParams({ name, mobile, address, email });
+    const res = await fetch('dash_profile_api.php?action=update_profile', { method: 'POST', body: form });
+    const data = await res.json();
+    if (data.status === 'success') { closeModal('editModal'); loadProfile(); }
+    else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+}
+
+// ---- 2FA ----
+async function showSetup2fa() {
+    document.getElementById('tfa-title').innerText = '🔐 Set Up 2FA';
+    document.getElementById('tfa-body').innerHTML = `<p style="font-size:13px; color:#ccc;">Loading...</p>`;
+    openModal('tfaModal');
+    const res = await fetch('dash_profile_api.php?action=setup_2fa', { method: 'POST' });
+    const data = await res.json();
+    if (data.status !== 'success') { document.getElementById('tfa-body').innerHTML = `<p style="color:#ff6b6b;">${data.error}</p>`; return; }
+    document.getElementById('tfa-body').innerHTML = `
+        <p style="font-size:13px; color:#ccc;">Add this account to Google Authenticator, Authy, or any TOTP app. Enter the secret manually (QR scanning isn't available here):</p>
+        <div style="font-family:monospace; font-size:15px; letter-spacing:2px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px; text-align:center; word-break:break-all;">${data.secret}</div>
+        <input type="text" id="tfa-code" placeholder="Enter the 6-digit code from your app" maxlength="6" style="margin-top:10px;">
+        <div id="tfa-msg" style="font-size:12px;"></div>
+        <button class="primary-btn" onclick="confirm2fa()">Confirm & Enable</button>`;
+}
+async function confirm2fa() {
+    const code = document.getElementById('tfa-code').value.trim();
+    const msg = document.getElementById('tfa-msg');
+    const res = await fetch('dash_profile_api.php?action=confirm_2fa', { method: 'POST', body: new URLSearchParams({ code }) });
+    const data = await res.json();
+    if (data.status !== 'success') { msg.style.color = '#ff6b6b'; msg.innerText = data.error; return; }
+    document.getElementById('tfa-body').innerHTML = `
+        <p style="color:#4ade80; font-size:13px;">✅ 2FA enabled. Save these one-time recovery codes somewhere safe — each works once if you lose access to your authenticator app:</p>
+        <div style="font-family:monospace; font-size:13px; background:rgba(0,0,0,0.3); padding:12px; border-radius:8px; line-height:1.8;">${data.recovery_codes.join('<br>')}</div>
+        <button class="primary-btn" onclick="closeModal('tfaModal'); loadProfile();">Done</button>`;
+}
+function showDisable2fa() {
+    document.getElementById('tfa-title').innerText = '🔓 Disable 2FA';
+    document.getElementById('tfa-body').innerHTML = `
+        <p style="font-size:13px; color:#ccc;">Confirm your password to disable two-factor authentication.</p>
+        <input type="password" id="tfa-disable-pass" placeholder="Current password">
+        <div id="tfa-msg" style="font-size:12px;"></div>
+        <button style="background:rgba(255,107,107,0.2); color:var(--danger); border-color:var(--danger);" onclick="doDisable2fa()">Disable 2FA</button>`;
+    openModal('tfaModal');
+}
+async function doDisable2fa() {
+    const password = document.getElementById('tfa-disable-pass').value;
+    const msg = document.getElementById('tfa-msg');
+    const res = await fetch('dash_profile_api.php?action=disable_2fa', { method: 'POST', body: new URLSearchParams({ password }) });
+    const data = await res.json();
+    if (data.status === 'success') { closeModal('tfaModal'); loadProfile(); } else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+}
+
+// ---- Deactivate ----
+async function submitDeactivate() {
+    const password = document.getElementById('deact-pass').value;
+    const msg = document.getElementById('deact-msg');
+    const res = await fetch('dash_profile_api.php?action=deactivate_account', { method: 'POST', body: new URLSearchParams({ password }) });
+    const data = await res.json();
+    if (data.status === 'success') { alert('Your account has been deactivated.'); window.location.href = 'dash_login.html'; }
+    else { msg.style.color = '#ff6b6b'; msg.innerText = data.error; }
+}
+
+checkAuthAndLoad();
+</script>
+</body>
+</html>
